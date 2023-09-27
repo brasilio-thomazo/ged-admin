@@ -66,7 +66,7 @@ return [
         'mysql_root' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL_ROOT'),
-            'host' => env('DB_HOST_ROOT', '127.0.0.1'),
+            'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
             'database' => env('DB_DATABASE_ROOT', 'mysql'),
             'username' => env('DB_USERNAME_ROOT', 'root'),
@@ -101,7 +101,7 @@ return [
         'pgsql_root' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL_ROOT'),
-            'host' => env('DB_HOST_ROOT', '127.0.0.1'),
+            'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE_ROOT', 'postgres'),
             'username' => env('DB_USERNAME_ROOT', 'postgres'),
