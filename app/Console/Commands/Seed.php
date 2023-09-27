@@ -24,40 +24,33 @@ class Seed extends Command
      */
     protected $description = 'Create default users';
 
-    private function createGroups(): array
+    private function privileges(): array
     {
-        $rw = ['group' => 'rw', 'user' => 'rw', 'client' => 'rw', 'app' => 'rw'];
-        $r_ = ['group' => 'r', 'user' => 'r', 'client' => 'r', 'app' => 'r'];
-        $rw['authorities'] = Privilege::makeAuthorities($rw);
-        $r_['authorities'] = Privilege::makeAuthorities($r_);
+        $privileges = [];
+        $privileges['rw'] = ['group' => 'rw', 'user' => 'rw', 'client' => 'rw', 'app' => 'rw'];
+        $privileges['r'] = ['group' => 'r', 'user' => 'r', 'client' => 'r', 'app' => 'r'];
+        $privileges['rw']['authorities'] = Privilege::makeAuthorities($privileges['rw']);
+        $privileges['r']['authorities'] = Privilege::makeAuthorities($privileges['r']);
+        return $privileges;
+    }
+
+    private function createGroups(array $arr): array
+    {
 
         $groups = [];
-
-        $group = Group::where('name', 'Administradores')->first();
-        if ($group) {
-            $groups['admin'] = $group->id;
-        } else {
-            print("Create groups [Administradores]\n");
-            try {
-                $group = new Group(['name' => 'Administradores']);
-                $group->privilege()->save(new Privilege($rw));
-                $groups['admin'] = $group->id;
-                print("Group [Administradores] created");
-            } catch (Exception $ex) {
-                printf("Error [%s]\n", $ex->getMessage());
+        foreach ($arr as $g) {
+            $group = Group::where('name', $g['group']['name'])->first();
+            if ($group) {
+                printf("Group [%s] exists\n", $g['group']['name']);
+                $groups[$g['group']['name']] = $group->id;
+                continue;
             }
-        }
-
-        $group = Group::where('name', 'Usuários')->first();
-        if ($group) {
-            $groups['user'] = $group->id;
-        } else {
-            print("Create groups [Usuários]\n");
+            printf("Creating group [%s]\n", $g['group']['name']);
             try {
-                $group = Group::create(['name' => 'Usuários']);
-                $group->privilege()->save(new Privilege($r_));
-                $groups['user'] = $group->id;
-                print("Group [Usuários] created");
+                $group = Group::create($g['group']);
+                $group->privilege()->save(new Privilege($g['privileges']));
+                $groups[$g['group']['name']] = $group->id;
+                print("created\n");
             } catch (Exception $ex) {
                 printf("Error [%s]\n", $ex->getMessage());
             }
@@ -65,7 +58,7 @@ class Seed extends Command
         return $groups;
     }
 
-    private function createUsers($arr): array
+    private function createUsers(array $arr): array
     {
         $users = [];
         foreach ($arr as $item) {
@@ -80,6 +73,7 @@ class Seed extends Command
                 $user = User::create($item['data']);
                 $user->groups()->attach($item['groups']);
                 $users[$user->username] = $user->id;
+                print("created\n");
             } catch (Exception $ex) {
                 printf("error [%s]\n", $ex->getMessage());
             }
@@ -92,7 +86,20 @@ class Seed extends Command
      */
     public function handle()
     {
-        $groups = $this->createGroups();
+        $privileges = $this->privileges();
+        $data_groups = [
+            [
+                'group' => ['name' => 'Administradores'],
+                'privileges' => $privileges['rw'],
+            ],
+            [
+                'group' => ['name' => 'Usuários'],
+                'privileges' => $privileges['r'],
+            ]
+        ];
+
+        $groups = $this->createGroups($data_groups);
+
         if (!count($groups)) {
             return;
         }
@@ -108,7 +115,7 @@ class Seed extends Command
                     'username' => 'system',
                     'password' => env('SYSTEM_PASSWORD', 'system')
                 ],
-                'groups' => [$groups['admin']],
+                'groups' => [$groups['Administradores']],
             ],
             [
                 'data' => [
@@ -120,7 +127,7 @@ class Seed extends Command
                     'username' => 'admin',
                     'password' => env('ADMIN_PASSWORD', 'admin')
                 ],
-                'groups' => [$groups['admin']],
+                'groups' => [$groups['Administradores']],
             ]
         ];
 
