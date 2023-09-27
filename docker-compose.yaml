@@ -10,11 +10,6 @@ services:
     image: postgres:alpine
     environment:
       - POSTGRES_PASSWORD=postgres
-      - DB_DATABASE=${DB_DATABASE:-optimus_admin_dev}
-      - DB_USERNAME=${DB_USERNAME:-optimus}
-      - DB_PASSWORD=${DB_PASSWORD:-optimus}
-    volumes:
-      - ./resources/docker/init.db.sh:/docker-entrypoint-initdb.d/init.db.sh
     networks:
       - app-lan
   admin.fpm:
@@ -25,6 +20,20 @@ services:
       - GID=${GID:-1000}
       - APP_DEBUG=${APP_DEBUG:-true}
       - APP_ENV=${APP_ENV:-local}
+      
+      - DB_CONNECTION_ROOT:${DB_CONNECTION_ROOT-pgsql}
+      - DB_HOST_ROOT:${DB_HOST_ROOT:-postgres}
+      - DB_PORT_ROOT:${DB_PORT_ROOT:-5432}
+      - DB_DATABASE_ROOT:${DB_DATABASE_ROOT:-postgres}
+      - DB_USERNAME_ROOT:${DB_USERNAME_ROOT:-postgres}
+      - DB_PASSWORD_ROOT:${DB_PASSWORD_ROOT:-postgres}
+
+      - DB_CONNECTION:${DB_CONNECTION:-pgsql}
+      - DB_HOST:${DB_HOST:-postgres}
+      - DB_PORT:${DB_PORT:-5432}
+      - DB_DATABASE:${DB_DATABASE:-db_admin}
+      - DB_USERNAME:${DB_USERNAME:-admin}
+      - DB_PASSWORD:${DB_PASSWORD:-admin}
     volumes:
       - .:/home/app/public_html
     networks:
