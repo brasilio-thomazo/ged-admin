@@ -22,17 +22,13 @@ class DatabaseSeeder extends Seeder
         $rw['authorities'] = Privilege::makeAuthorities($rw);
         $r_['authorities'] = Privilege::makeAuthorities($r_);
 
+        $admin = new Group(['name' => 'Administradores']);
+        $admin->privilege()->save(new Privilege($rw));
 
-
-
-        $admins = Group::factory()->create(['name' => 'Administradores']);
-        $admins->privilege()->save(new Privilege($rw));
-
-
-        $users = Group::factory()->create(['name' => 'Usuários']);
+        $users = new Group(['name' => 'Usuários']);
         $users->privilege()->save(new Privilege($r_));
 
-        $system = User::factory()->create([
+        User::create([
             'name' => 'System',
             'document' => '',
             'role' => '',
@@ -40,11 +36,9 @@ class DatabaseSeeder extends Seeder
             'email' => 'root@localhost',
             'username' => 'system',
             'password' => 'system'
-        ]);
+        ])->groups()->attach([$admin->id]);
 
-        $system->groups()->attach([$admins->id]);
-
-        $admin = User::factory()->create([
+        User::create([
             'name' => 'Administrador',
             'document' => '',
             'role' => '',
@@ -52,8 +46,6 @@ class DatabaseSeeder extends Seeder
             'email' => 'postmaster@localhost',
             'username' => 'admin',
             'password' => 'admin'
-        ]);
-
-        $admin->groups()->attach([$admins->id]);
+        ])->groups()->attach([$admin->id]);
     }
 }
