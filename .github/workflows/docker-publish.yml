@@ -23,7 +23,7 @@ jobs:
           target: "fpm"
           push: true
           tags: |
-            devoptimus/admin-fpm:0.0.4
+            devoptimus/admin-fpm:0.0.5
             devoptimus/admin-fpm:latest
 
       - name: Build php-composer image
@@ -33,7 +33,7 @@ jobs:
           target: "node"
           push: true
           tags: |
-            devoptimus/admin-node:0.0.4
+            devoptimus/admin-node:0.0.5
             devoptimus/admin-node:latest
 
       - name: Build php-fpm image
@@ -43,5 +43,5 @@ jobs:
           target: "nginx"
           push: true
           tags: |
-            devoptimus/admin-nginx:0.0.4
+            devoptimus/admin-nginx:0.0.5
             devoptimus/admin-nginx:latest

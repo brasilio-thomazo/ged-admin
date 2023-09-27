@@ -24,6 +24,8 @@ USER root
 RUN install-php-ext ${EXT} \
     && install-php-pecl-ext ${PECL_EXT}
 COPY resources/docker/www.ini /etc/php/fpm/pool.d/
+COPY resources/docker/fpm-entrypoint /usr/local/bin/entrypoint
+
 
 USER app
 WORKDIR /home/app/public_html
