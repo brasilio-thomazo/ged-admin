@@ -1,0 +1,61 @@
+version: '3.8'
+services:
+  redis:
+    container_name: redis
+    image: redis:alpine
+    networks:
+     - app-lan
+  postgres:
+    container_name: postgres
+    image: postgres:alpine
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - DB_DATABASE=${DB_DATABASE:-optimus_admin_dev}
+      - DB_USERNAME=${DB_USERNAME:-optimus}
+      - DB_PASSWORD=${DB_PASSWORD:-optimus}
+    volumes:
+      - ./resources/docker/init.db.sh:/docker-entrypoint-initdb.d/init.db.sh
+    networks:
+      - app-lan
+  admin.fpm:
+    container_name: admin.fpm
+    image: devoptimus/admin-fpm
+    environment:
+      - UID=${UID:-1000}
+      - GID=${GID:-1000}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - APP_ENV=${APP_ENV:-local}
+    volumes:
+      - .:/home/app/public_html
+    networks:
+      - app-lan
+  admin.nginx:
+    container_name: admin.nginx
+    image: devoptimus/admin-nginx
+    ports:
+      - 8080:80
+    environment:
+      - USER_UID=${USER_UID:-1000}
+      - USER_GID=${USER_GID:-1000}
+      - FPM_HOST="admin.fpm:9000"
+    depends_on:
+      - admin.fpm
+    volumes:
+      - ./public:/home/app/public_html/public
+    networks:
+      - app-lan
+  admin.node:
+    container_name: admin.node
+    image: devoptimus/admin-node
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/home/app/public_html
+      - ./node_modules:/home/app/public_html/node_modules
+    command: ["npm", "run", "dev"]
+    networks:
+      - app-lan
+networks:
+  app-lan:
+    
+  

@@ -1,0 +1,8 @@
+*
+!.gitignore
+!admin.conf
+!admin.ini
+!base
+!base/*
+!agents
+!clients
