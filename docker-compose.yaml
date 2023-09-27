@@ -42,7 +42,7 @@ services:
     container_name: admin.nginx
     image: devoptimus/admin-nginx
     ports:
-      - 8080:80
+      - ${APP_PORT:-0}:80
     environment:
       - USER_UID=${USER_UID:-1000}
       - USER_GID=${USER_GID:-1000}
