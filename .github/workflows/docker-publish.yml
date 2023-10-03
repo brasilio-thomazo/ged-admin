@@ -1,9 +1,9 @@
-name: admin-image-publish
+name: ged-admin-image-publish
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
 jobs:
   build-image:
     runs-on: ubuntu-latest
@@ -19,29 +19,29 @@ jobs:
       - name: Build php-cli image
         uses: docker/build-push-action@v5
         with:
-          context: "."
-          target: "fpm"
+          context: '.'
+          target: 'fpm'
           push: true
           tags: |
-            devoptimus/admin-fpm:0.0.5
-            devoptimus/admin-fpm:latest
+            devoptimus/ged-admin-fpm:0.0.5
+            devoptimus/ged-admin-fpm:latest
 
       - name: Build php-composer image
         uses: docker/build-push-action@v5
         with:
-          context: "."
-          target: "node"
+          context: '.'
+          target: 'node'
           push: true
           tags: |
-            devoptimus/admin-node:0.0.5
-            devoptimus/admin-node:latest
+            devoptimus/ged-admin-node:0.0.5
+            devoptimus/ged-admin-node:latest
 
       - name: Build php-fpm image
         uses: docker/build-push-action@v5
         with:
-          context: "."
-          target: "nginx"
+          context: '.'
+          target: 'nginx'
           push: true
           tags: |
-            devoptimus/admin-nginx:0.0.5
-            devoptimus/admin-nginx:latest
+            devoptimus/ged-admin-nginx:0.0.5
+            devoptimus/ged-admin-nginx:latest
