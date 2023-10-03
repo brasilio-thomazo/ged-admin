@@ -11,6 +11,7 @@
           <tr>
             <th>Organização</th>
             <th>Tipo</th>
+            <th>Path</th>
             <th>URL</th>
             <th>Banco de dados</th>
             <th>Uptime/Status</th>
@@ -20,12 +21,13 @@
         <tbody>
           <tr v-for="row in store.rows" :key="row.id">
             <td>{{ row.client.name }}</td>
-            <td class="upper">{{ app[row.application] }}</td>
-            <td class="lower">{{ `http://${row.domain}:${row.http_port}` }}</td>
+            <td class="upper">
+              {{ row.application === 0 ? 'cliente' : 'distribuidor' }}
+            </td>
+            <td>{{ row.path }}</td>
+            <td class="lower">http://{{ row.subdomain }}</td>
             <td class="lower">
-              {{ row.db_type }}://{{ row.db_host }}:{{ row.db_port }}/{{
-                row.db_name
-              }}
+              {{ row.db_name }}
             </td>
             <td>
               <div class="status">
@@ -43,10 +45,20 @@
                 <button @click="emit('show', row)" type="button" class="icon">
                   <span class="material-icons">pageview</span>
                 </button>
-                <button @click="emit('edit', row)" type="button" class="icon">
+                <button
+                  v-if="me.is_admin"
+                  @click="emit('edit', row)"
+                  type="button"
+                  class="icon"
+                >
                   <span class="material-icons">edit</span>
                 </button>
-                <button @click="destroy(row)" type="button" class="icon">
+                <button
+                  v-if="me.is_admin"
+                  @click="destroy(row)"
+                  type="button"
+                  class="icon"
+                >
                   <span class="material-icons">delete</span>
                 </button>
               </div>
@@ -63,14 +75,15 @@ import { useAppStore } from '@/store/app-store'
 import { inject } from 'vue'
 import axios from 'axios'
 import { interval } from '@/provider'
+import { useStore } from '@/store/store'
 const store = useAppStore()
 const http = inject('http', axios)
+const me = useStore()
 
 const emit = defineEmits<{
   (e: 'edit', payload: App): void
   (e: 'show', payload: App): void
 }>()
-const app = { client: 'Cliente', agent: 'Distribuidor' }
 
 async function destroy(app: App) {
   try {

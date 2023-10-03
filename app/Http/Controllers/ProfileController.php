@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AuthRequest;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
 
@@ -15,13 +14,23 @@ class ProfileController extends Controller
         if (!auth('web')->attempt($request->except('remember'))) {
             throw ValidationException::withMessages(['password' => 'password incorrect']);
         }
+        /**
+         * @var User
+         */
+        $user = auth('web')->user();
+        $user->groups;
 
-        return response(auth('web')->user());
+        return response($user);
     }
 
     public function me(): Response
     {
-        return response(auth('web')->user());
+        /**
+         * @var User
+         */
+        $user = auth('web')->user();
+        $user->groups;
+        return response($user);
     }
 
     public function logout()

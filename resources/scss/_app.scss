@@ -18,4 +18,11 @@
     color: crimson;
     font-size: 1.2em;
   }
+
+  .pre {
+    font-family: monospace;
+    padding: 10px;
+    border: 1px solid var(--boder-color);
+    font-size: 1.2em;
+  }
 }

@@ -23,7 +23,7 @@ class StoreClientRequest extends FormRequest
     {
         return [
             'name'      => 'required|string|unique:clients,name',
-            'document'  => 'required|regex:/^[0-9]{11}([0-9]{3})?$/',
+            'identity'  => 'required|regex:/^[0-9]{11}([0-9]{3})?$/',
             'phone'     => 'required|regex:/^[0-9]{2}(9?)[0-9]{8}$/',
             'email'     => 'required|email',
             'scope'     => 'required|in:client,agente',

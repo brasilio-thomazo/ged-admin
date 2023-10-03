@@ -59,6 +59,7 @@ declare global {
   interface Group {
     id: number
     name: string
+    is_admin: boolean
     privilege: Privilege
     created_at: string
     updated_at: string
@@ -82,7 +83,7 @@ declare global {
   interface User {
     id: string
     name: string
-    document: string
+    identity: string
     role: string
     phone: string
     email: string
@@ -94,7 +95,7 @@ declare global {
 
   interface UserRequest {
     name: string
-    document: string
+    identity: string
     role: string
     phone: string
     email: string
@@ -108,7 +109,7 @@ declare global {
     message?: string
     errors?: {
       name?: string[]
-      document?: string[]
+      identity?: string[]
       role?: string[]
       phone?: string[]
       email?: string[]
@@ -123,7 +124,7 @@ declare global {
   interface Client {
     id: string
     name: string
-    document: string
+    identity: string
     email: string
     phone: string
     scope: 'client' | 'agent'
@@ -135,7 +136,7 @@ declare global {
 
   interface ClientRequest {
     name: string
-    document: string
+    identity: string
     email: string
     phone: string
     scope: 'client' | 'agent'
@@ -147,7 +148,7 @@ declare global {
     message?: string
     errors?: {
       name?: string[]
-      document?: string[]
+      identity?: string[]
       email?: string[]
       phone?: string[]
       scope?: string[]
@@ -160,44 +161,51 @@ declare global {
    */
   interface App {
     id: string
-    application: 'client' | 'agent'
     client_id: string
-    http_port: number
-    domain: string
-    redis_host: string
-    redis_port: number
-    memcached_host: string | null
-    db_type: 'mysql' | 'pgsql' | 'sqlite'
-    db_host: string
-    db_port: number
+    application: 0 | 1
+    path: string
+    subdomain: string
+    use_domain: boolean
+    domain?: string
+    use_custom: boolean
+    redis_host?: string
+    redis_port?: number
+    memcached_host?: string
+    db_type?: 'mysql' | 'pgsql' | 'sqlite'
+    db_host?: string
+    db_port?: number
     db_name: string
-    cache_driver: 'redis' | 'memcached' | 'file'
-    session_driver: 'redis' | 'memcached' | 'file'
-    installed_at: string | null
-    started_at: string | null
+    cache_driver?: 'redis' | 'memcached' | 'file'
+    session_driver?: 'redis' | 'memcached' | 'file'
+    installed_at?: string
+    started_at?: string
     created_at: string
     updated_at: string
     client: Client
   }
   interface AppRequest {
-    application: 'client' | 'agent'
+    application: 0 | 1
     client_id: string
-    http_port: number
-    domain: string
-    redis_host: string
-    redis_port: number
+    path: string
+    domain?: string
+    redis_host?: string
+    redis_port?: number
     redis_pass?: string
-    memcached_host: string | null
-    db_type: 'mysql' | 'pgsql' | 'sqlite'
-    db_host: string
-    db_port: number
+    memcached_host?: string
+    db_type?: 'mysql' | 'pgsql' | 'sqlite'
+    db_host?: string
+    db_port?: number
+    super_user?: string
+    super_pass?: string
     db_name: string
     db_user?: string
     db_pass?: string
-    cache_driver: 'redis' | 'memcached' | 'file'
-    session_driver: 'redis' | 'memcached' | 'file'
+    cache_driver?: 'redis' | 'memcached' | 'file'
+    session_driver?: 'redis' | 'memcached' | 'file'
     started_at?: string
     installed_at?: string
+    use_custom: boolean
+    use_domain: boolean
   }
 
   interface AppError {
@@ -205,7 +213,7 @@ declare global {
     errors?: {
       application?: string[]
       client_id?: string[]
-      http_port?: string[]
+      path?: string[]
       domain?: string[]
       redis_host?: string[]
       redis_port?: string[]
@@ -215,6 +223,8 @@ declare global {
       db_host?: string[]
       db_port?: string[]
       db_name?: string[]
+      super_user?: string[]
+      super_pass?: string[]
       db_user?: string[]
       db_pass?: string[]
       cache_driver?: string[]

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('clients', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name')->unique();
-            $table->string('document');
+            $table->string('identity');
             $table->string('phone');
             $table->string('email');
             $table->enum('scope', ['client', 'agent']);

@@ -26,9 +26,9 @@ const store = useGroupStore()
 const http = inject('http', axios)
 
 tab.setSlot({
-  list: { slot: GroupList, icon: 'list' },
-  create: { slot: GroupCreate, icon: 'group_add' },
-  edit: { slot: GroupEdit, icon: 'edit_note' },
+  list: { slot: shallowRef(GroupList), icon: 'list' },
+  create: { slot: shallowRef(GroupCreate), icon: 'group_add' },
+  edit: { slot: shallowRef(GroupEdit), icon: 'edit_note' },
   show: {},
   error: {},
 })

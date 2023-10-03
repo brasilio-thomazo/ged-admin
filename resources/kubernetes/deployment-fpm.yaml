@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-fpm
+spec:
+  selector:
+    matchLabels:
+      app: client-fpm
+  template:
+    metadata:
+      labels:
+        app: client-fpm
+    spec:
+      initContainers:
+        - name: install
+          image: devoptimus/ged-client-fpm
+          envFrom:
+            - configMapRef:
+                name: "client-config"
+            - secretRef:
+                name: "client-secret"
+          command:
+            - php
+          args:
+            - artisan
+            - app:install
+          
+      containers:
+      - name: client-fpm
+        image: devoptimus/ged-client-fpm
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 9000
+        envFrom:
+          - configMapRef:
+              name: "client-config"
+          - secretRef:
+              name: "client-secret"
+        volumeMounts:
+          - name: storage
+            mountPath: /home/app/public_html/storage/app
+  volumes:
+    - name: storage
+      persistentVolumeClaim:
+        claimName: storage-pvc

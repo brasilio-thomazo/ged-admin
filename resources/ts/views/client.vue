@@ -27,10 +27,10 @@ const store = useClientStore()
 const http = inject('http', axios)
 
 tab.setSlot({
-  list: { slot: ClientList, icon: 'list' },
-  create: { slot: ClientCreate, icon: 'box_add' },
-  edit: { slot: ClientEdit, icon: 'folder_managed' },
-  show: { slot: ClientShow, icon: 'preview' },
+  list: { slot: shallowRef(ClientList), icon: 'list' },
+  create: { slot: shallowRef(ClientCreate), icon: 'box_add' },
+  edit: { slot: shallowRef(ClientEdit), icon: 'folder_managed' },
+  show: { slot: shallowRef(ClientShow), icon: 'preview' },
   error: {},
 })
 

@@ -12,9 +12,8 @@
             <th>Nome</th>
             <th>Grupos</th>
             <th>Usuários</th>
-            <th>Clientes</th>
+            <th>Organizações</th>
             <th>Aplicações</th>
-            <th>Data</th>
             <th></th>
           </tr>
         </thead>
@@ -69,7 +68,6 @@
                 </div>
               </div>
             </td>
-            <td>{{ dateFormat(row.created_at) }}</td>
             <td>
               <div class="buttons">
                 <button @click="emit('edit', row)" type="button" class="icon">
@@ -90,7 +88,6 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { inject } from 'vue'
-import { dateFormat } from '@/provider'
 import { useGroupStore } from '@/store/group_store'
 const store = useGroupStore()
 const http = inject('http', axios)

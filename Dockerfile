@@ -1,16 +1,26 @@
 ARG EXT="pdo pdo_sqlite pdo_pgsql pdo_odbc pdo_mysql pdo_dblib"
-ARG PECL_EXT="redis protobuf mongodb memcache"
+ARG PECL_EXT="redis protobuf mongodb memcache yaml"
 ARG USER_UID=1000
 ARG USER_GID=1000
 
 #
 # NODEJS
 #
-FROM node:alpine as node
-RUN mkdir -p /home/app/public_html
+FROM alpine as node
+ARG USER_UID
+ARG USER_GID
+ENV UID=${USER_GID}
+ENV GID=${USER_GID}
+
+COPY . /home/app/public_html
 WORKDIR /home/app/public_html
-COPY . .
-RUN npm install && npm run build && rm -r node_modules
+RUN addgroup -g ${UID} app \
+    && adduser -h /home/app -G app -u ${GID} -D app \
+    && apk add --no-cache nodejs npm bash \
+    && chown app:app /home/app -R \
+    && su app -c 'npm i' \
+    && su app -c 'npm run build'
+USER app
 
 FROM devoptimus/php-fpm as fpm
 ARG EXT

@@ -1,0 +1,7 @@
+php php-bcmath php-bz2 php-cgi php-cli php-common php-curl \
+php-enchant php-fpm php-gd php-gmp php-interbase php-intl \
+php-json php-ldap php-mbstring php-mysql php-odbc php-pgsql \
+php-phpdbg php-pspell php-readline php-snmp php-soap \
+php-sqlite3 php-sybase php-tidy php-xml php-zip php-imagick \
+php-memcached php-mongodb php-pear php-uploadprogress php-uuid \
+php-yaml php-google-protobuf

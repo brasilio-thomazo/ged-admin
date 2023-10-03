@@ -10,12 +10,12 @@
           </span>
         </div>
         <div class="line">
-          <label for="document">CPF/CNPJ:</label>
-          <input type="tel" id="document" v-model="form.document" v-maska="document"
+          <label for="identity">CPF/CNPJ:</label>
+          <input type="tel" id="identity" v-model="form.identity" v-maska="identity"
             data-maska="['###.###.###-##', '##.###.###/####-##']"
             pattern="^[0-9]{2,3}\.[0-9]{3}\.[0-9]{3}((\/[0-9]{4})?)-[0-9]{2}$" required />
-          <span v-if="error?.errors?.document" class="error">
-            {{ error.errors.document.join(',') }}
+          <span v-if="error?.errors?.identity" class="error">
+            {{ error.errors.identity.join(',') }}
           </span>
         </div>
         <div class="line">
@@ -87,7 +87,7 @@ import axios from 'axios'
 const emit = defineEmits<{ (e: 'close'): void }>()
 const init: ClientRequest = {
   name: '',
-  document: '',
+  identity: '',
   phone: '',
   email: '',
   scope: 'client',
@@ -108,14 +108,14 @@ const store = useClientStore()
 const error = ref<ClientError>()
 const form = ref<ClientRequest>({ ...init })
 
-const document = ref<MaskaDetail>({ ...maskDetail })
+const identity = ref<MaskaDetail>({ ...maskDetail })
 const phone = ref<MaskaDetail>({ ...maskDetail })
 
 async function save() {
   try {
     const request = {
       ...form.value,
-      document: document.value.unmasked,
+      identity: identity.value.unmasked,
       phone: phone.value.unmasked,
     }
     const { data } = await http.post<Client>('client', request)

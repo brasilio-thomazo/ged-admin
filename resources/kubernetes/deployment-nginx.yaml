@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-nginx
+spec:
+  selector:
+    matchLabels:
+      app: client-nginx
+  template:
+    metadata:
+      labels:
+        app: client-nginx
+    spec:
+      containers:
+      - name: client-nginx
+        image: devoptimus/ged-client-nginx
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 80
+        envFrom:
+          - configMapRef:
+              name: "client-config"

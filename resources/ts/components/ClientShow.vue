@@ -10,7 +10,7 @@
           </div>
           <div class="line">
             <div class="label">CPF/CNPJ:</div>
-            <div class="text">{{ mask(props.data.document) }}</div>
+            <div class="text">{{ mask(props.data.identity) }}</div>
           </div>
           <div class="line">
             <div class="label">Tipo:</div>

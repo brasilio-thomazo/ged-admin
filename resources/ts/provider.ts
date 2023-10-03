@@ -27,7 +27,7 @@ export function mask(str: string, isPhone = false): string {
   return str.replace(phone, '($1) $2$3-$4')
 }
 
-export function interval(str: string | null) {
+export function interval(str: string | undefined) {
   if (!str) return '0 00:00:00'
   const start = new Date(str)
   const now = new Date()

@@ -9,44 +9,65 @@ use DateTimeZone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\Yaml\Yaml;
 
 class AppController extends Controller
 {
-    private array $vars = [
-        'ID', 'APP', 'URL',
-        'DB_DRIVER', 'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASS',
-        'DOMAIN', 'HTTP_PORT',
-        'REDIS_HOST', 'REDIS_PORT', 'REDIS_PASS',
-        'MEMCACHED_HOST',
-        'CACHE_DRIVER', 'SESSION_DRIVER',
+    private string $secret;
+    private string $config_map;
+
+    private array $deployments = [
+        'nginx' => '',
+        'grpc' => '',
+        'fpm' => '',
     ];
 
-    private function getRegex(): array
-    {
-        return array_map(fn ($v) => sprintf('/VAR_%s/', $v), $this->vars);
-    }
+    private array $services = [
+        'nginx' => '',
+        'grpc' => '',
+        'fpm' => '',
+    ];
 
-    private function getReplace(App $app, Request $request): array
-    {
-        return [
-            $app->id, $app->application, sprintf('http://%s:%d', $app->domain, $app->http_port),
-            $app->db_type, $app->db_host, $app->db_port, $app->db_name,
-            $request->db_user, $request->db_pass,
-            $app->domain, $app->http_port,
-            $app->redis_host, $app->redis_port, $request->redis_pass,
-            $app->memcached_host,
-            $app->cache_driver, $app->session_driver
-        ];
-    }
+    private array $servicePorts = [
+        'nginx' => [
+            'port' => [80],
+            'target' => [80],
+            'node' => null
+        ],
+        'grpc' => [
+            'port' => [50051],
+            'target' => [50051],
+            'node' => []
+        ],
+        'fpm' => [
+            'port' => [9000],
+            'target' => [9000],
+            'node' => null
+        ],
+    ];
 
-    private function writeConfigs(App $app, Request $request)
+
+    private int $portMin = 30000;
+    private int $portMax = 32767;
+    private int $grpcPort = 50051;
+    private int $fpmPort = 9000;
+
+    public function __construct()
     {
-        $fpm_data = file_get_contents('http/fpm.ini');
-        $vhost_data = file_get_contents('http/nginx.conf');
-        $fpm = sprintf("fpm/%s.conf", $app->id);
-        $vhost = sprintf("vhost/%s.conf", $app->id);
-        Storage::put($fpm, preg_replace($this->getRegex(), $this->getReplace($app, $request), $fpm_data));
-        Storage::put($vhost, preg_replace($this->getRegex(), $this->getReplace($app, $request), $vhost_data));
+
+        $home = preg_replace("/^\/(.+)\/public$/", "$1", $_SERVER['DOCUMENT_ROOT']);
+        $base = sprintf("/%s/resources/kubernetes", $home);
+        $this->secret = $base . '/secret.yaml';
+        $this->config_map = $base . '/config-map.yaml';
+        $this->deployments['nginx'] = $base . '/deployment-nginx.yaml';
+        $this->deployments['grpc'] = $base . '/deployment-grpc.yaml';
+        $this->deployments['fpm'] = $base . '/deployment-fpm.yaml';
+
+        $this->services['nginx'] = $base . '/service-nginx.yaml';
+        $this->services['grpc'] = $base . '/service-grpc.yaml';
+        $this->services['fpm'] = $base . '/service-fpm.yaml';
+        $this->grpcPort = config('grpc.port', 50051);
+        $this->fpmPort = config('fpm.port', 9000);
     }
 
     /**
@@ -58,17 +79,261 @@ class AppController extends Controller
         return response($builder->get());
     }
 
+    private function generatePort(): int
+    {
+        $ports = App::get(['grpc_port'])->toArray();
+        do {
+            $port = rand($this->portMin, $this->portMax);
+        } while (in_array($port, $ports));
+        return $port;
+    }
+
+    private function setContainer(array &$containers, $config, $secret = null, $name = null, $image = null)
+    {
+        foreach ($containers as $k => $container) {
+            if (isset($name) && isset($image)) {
+                if ($container['image'] == $image) {
+                    $containers[$k]['name'] = $name;
+                }
+            }
+            $envs = $container['envFrom'];
+            foreach ($envs as $k2 => $env) {
+                if (isset($env['configMapRef']) && $env['configMapRef']['name'] == 'client-config') {
+                    $containers[$k]['envFrom'][$k2]['configMapRef']['name'] = $config;
+                    continue;
+                }
+                if (isset($secret) && isset($env['secretRef']) && $env['secretRef']['name'] == 'client-secret') {
+                    $containers[$k]['envFrom'][$k2]['secretRef']['name'] = $secret;
+                }
+            }
+        }
+    }
+
+    private function setContainerPort(array &$containers, array $images, array $ports)
+    {
+        $j = 0;
+        foreach ($containers as $i => $container) {
+            if ($container['image'] != $images[$i]) continue;
+            if (!isset($container['ports'])) continue;
+            $container_ports = $container['ports'];
+            for ($k = 0; $k < count($container_ports); $k++) {
+                $containers[$i]['ports'][$k]['containerPort'] = $ports[$i][$j];
+            }
+            $j++;
+        }
+    }
+
+    private function setPorts(array &$yaml, array $ports, array $targetPorts, array $nodePorts = null)
+    {
+        $j = 0;
+        for ($i = 0; $i < count($yaml); $i++) {
+            if (isset($yaml[$i]['port'])) {
+                $yaml[$i]['port'] = $ports[$i];
+            }
+            if (isset($yaml[$i]['containerPort'])) {
+                $yaml[$i]['containerPort'] = $ports[$i];
+            }
+            if (isset($yaml[$i]['targetPort'])) {
+                $yaml[$i]['targetPort'] = $targetPorts[$i];
+            }
+            if (isset($yaml[$i]['nodePort']) && $nodePorts) {
+                $yaml[$i]['nodePort'] = $nodePorts[$i];
+            }
+        }
+    }
+
+    private function makeDeplyments(array $names, array &$data)
+    {
+        $data[] = $this->makeFpmDeplyment($names);
+        $data[] = $this->makeNginxDeplyment($names);
+        $data[] = $this->makeGrpcDeplyment($names);
+    }
+
+    private function makeDeplyment(array &$yaml, string $key, array $names, $image)
+    {
+        $yaml['metadata']['name'] = $names[$key];
+        $yaml['spec']['selector']['matchLabels']['app'] = $names[$key];
+        $yaml['spec']['template']['metadata']['labels']['app'] = $names[$key];
+
+        if (isset($yaml['spec']['template']['spec']['initContainers'])) {
+            $this->setContainer($yaml['spec']['template']['spec']['initContainers'], $names['config'], $names['secret']);
+        }
+        if (isset($yaml['spec']['template']['spec']['containers'])) {
+            $this->setContainer($yaml['spec']['template']['spec']['containers'], $names['config'], $names['secret'], $names[$key], $image);
+        }
+        return $yaml;
+    }
+
+    private function makeFpmDeplyment(array $names): string
+    {
+        $yaml = Yaml::parse(file_get_contents($this->deployments['fpm']));
+        $this->makeDeplyment($yaml, 'fpm', $names, 'devoptimus/ged-client-fpm');
+        return Yaml::dump($yaml, 10, 2);
+    }
+
+    private function makeNginxDeplyment(array $names): string
+    {
+        $yaml = Yaml::parse(file_get_contents($this->deployments['nginx']));
+        $this->makeDeplyment($yaml, 'nginx', $names, 'devoptimus/ged-client-nginx');
+        return Yaml::dump($yaml, 10, 2);
+    }
+
+    private function makeGrpcDeplyment(array $names): string
+    {
+        $yaml = Yaml::parse(file_get_contents($this->deployments['grpc']));
+        $this->makeDeplyment($yaml, 'grpc', $names, 'devoptimus/ged-client-grpc-server');
+        // $this->setContainerPort($yaml['spec']['template']['spec']['containers'], ['devoptimus/ged-client-grpc-server'], [[$port]]);
+        return Yaml::dump($yaml, 10, 2);
+    }
+
+    private function makeConfigMap(Request $request, array $names, array &$data)
+    {
+        $yaml = Yaml::parse(file_get_contents($this->config_map));
+        $custom = $request->get("custom", false);
+
+        $section = "database.connections." . config("database.default");
+        $host = config($section . ".host");
+        $port = config($section . ".port");
+
+        $redis_host = config("database.redis.default.host");
+        $redis_port = config("database.redis.default.port");
+
+        $yaml['metadata']['name'] = $names['config'];
+
+        $yaml['data']['DB_CONNECTION'] = $custom ? $request->db_type : config('database.default', 'pgsql');
+        $yaml['data']['DB_DATABASE'] = $request->db_name;
+        $yaml['data']['DB_HOST'] = $custom ? $request->db_host : $host;
+        $yaml['data']['DB_PORT'] = $custom ? $request->db_port : $port;
+        $yaml['data']['SESSION_DRIVER'] = $custom ? $request->session_driver : config("session.driver", 'file');
+        $yaml['data']['CACHE_DRIVER'] = $custom ? $request->session_driver : config("cache.default", "file");
+        $yaml['data']['FPM_HOST'] = $names['fpm'] . ':9000';
+        $yaml['data']['GRPC_HOST'] = $names['grpc'];
+        $yaml['data']['GRPC_PORT'] = strval($this->grpcPort);
+        $yaml['data']['GRPC_URL'] = $names['grpc'] . ':' . $this->grpcPort;
+
+        $yaml['data']['REDIS_HOST'] = $custom ? $request->redis_host : $redis_host;
+        $yaml['data']['REDIS_PORT'] = $custom ? $request->redis_port : $redis_port;
+        $data[] = Yaml::dump($yaml, 10, 2, Yaml::DUMP_NUMERIC_KEY_AS_STRING);
+    }
+
+    private function makeSecret(Request $request, array $names, array &$data)
+    {
+        $yaml = Yaml::parse(file_get_contents($this->secret));
+        $custom = $request->get('custom', false);
+        $key = sprintf('base64:%s', base64_encode(openssl_random_pseudo_bytes(32)));
+        $section = "database.connections." . config("database.default");
+        $super_username = config($section . ".super.username");
+        $super_password = config($section . ".super.password");
+        $username = config($section . ".username");
+        $password = config($section . ".password");
+
+        $redis_username = config("database.redis.default.username", "null");
+        $redis_password = config("database.redis.default.password", "null");
+
+        $yaml['metadata']['name'] = $names['secret'];
+
+        $yaml['data']['APP_KEY'] = base64_encode($key);
+
+        $yaml['data']['SYSTEM_PASSWORD'] = base64_encode(config('install.system.password'));
+        $yaml['data']['ADMIN_PASSWORD'] = base64_encode(config('install.admin.password'));
+
+        $yaml['data']['DB_SUPER_USERNAME'] = base64_encode($custom ? $request->super_user : $super_username);
+        $yaml['data']['DB_SUPER_PASSWORD'] = base64_encode($custom ? $request->super_pass : $super_password);
+        $yaml['data']['DB_USERNAME'] = base64_encode($custom ? $request->db_user : $username);
+        $yaml['data']['DB_PASSWORD'] = base64_encode($custom ? $request->db_pass_super : $password);
+
+        $yaml['data']['REDIS_USERNAME'] = base64_encode($custom ? $request->redis_user : $redis_username);
+        $yaml['data']['REDIS_PASSWORD'] = base64_encode($custom ? $request->redis_pass : $redis_password);
+
+        $data[] = Yaml::dump($yaml, 10, 2);
+    }
+
+    private function makeServices(array $names, array &$data)
+    {
+        foreach ($this->services as $k => $service) {
+            $yaml = Yaml::parse(file_get_contents($service));
+            $this->makeService(
+                $yaml,
+                $names[$k],
+                $this->servicePorts[$k]['port'],
+                $this->servicePorts[$k]['target'],
+                $this->servicePorts[$k]['node']
+            );
+            $data[] = Yaml::dump($yaml, 10, 2);
+        }
+    }
+
+    private function makeService(array &$yaml, $name, array $ports, array $targetPorts, array $nodePorts = null)
+    {
+        $yaml['metadata']['name'] = $name;
+        $yaml['spec']['selector']['app'] = $name;
+        if (isset($nodePorts)) {
+            $this->setPorts($yaml['spec']['ports'], $ports, $targetPorts, $nodePorts);
+        } else {
+            $this->setPorts($yaml, $ports, $targetPorts);
+        }
+    }
+
     /**
      * Store a newly created resource in storage.
      */
     public function store(StoreAppRequest $request)
     {
-        $save = App::create($request->except(['db_pass', 'db_user', 'redis_pass']));
-        $app = App::with('client')->findOrFail($save->id);
-        $this->writeConfigs($app, $request);
+        $useCustom = $request->get('use_custom', false);
+        $useDomain = $request->get('use_domain', false);
+        $domain = env('CLIENT_DOMAIN', 'localhost');
+        $nodePort = $this->generatePort();
 
-        return response($app, 201);
-        //return response([], 400);
+        $this->servicePorts['grpc']['node'] = [$nodePort];
+
+        $save = [
+            'client_id' => $request->get('client_id'),
+            'application' => 0,
+            'path' => $request->get('path'),
+            'subdomain' => $request->get('path') . '.' . $domain,
+            'grpc_port' =>  $nodePort,
+            'use_domain' => $useDomain,
+            'use_custom' => $useCustom,
+            'db_name' => $request->get('db_name'),
+        ];
+
+        if ($useDomain) {
+            $save['domain'] = $request->get('domain');
+        }
+
+        if ($useCustom) {
+            $save['redis_host'] = $request->get('redis_host');
+            $save['redis_port'] = $request->get('redis_port');
+            $save['memcached_host'] = $request->get('memcached_host');
+            $save['db_type'] = $request->get('db_type');
+            $save['db_host'] = $request->get('db_host');
+            $save['db_port'] = $request->get('db_port');
+            $save['cache_driver'] = $request->get('cache_driver');
+            $save['session_driver'] = $request->get('session_driver');
+        }
+
+
+        $app = App::create($save);
+        $response = App::with(['client'])->find($app->id);
+        $name = $request->get('path', $app->id);
+        $names = [
+            'secret' => "client-secret-" . $name,
+            'config' => "client-config-" . $name,
+            'nginx' => "client-nginx-" . $name,
+            'grpc' => "client-grpc-" . $name,
+            'fpm' => "client-fpm-" . $name,
+        ];
+
+        $data = array();
+        $crlf = "\n---\n\n";
+        $this->makeServices($names, $data);
+        $this->makeSecret($request, $names, $data);
+        $this->makeConfigMap($request, $names, $data);
+        $this->makeDeplyments($names, $data);
+        $content = implode($crlf, $data);
+        $filename = "k8s-" . $response->id . ".yaml";
+        Storage::put($filename, $content);
+        return response($response, 201);
     }
 
     /**
@@ -84,13 +349,56 @@ class AppController extends Controller
      */
     public function update(UpdateAppRequest $request, App $app)
     {
-        $update = array_filter($request->all(), function ($value, $key) use ($app) {
-            return $value != $app->$key;
-        }, ARRAY_FILTER_USE_BOTH);
-        if (count($update)) {
-            $app->update($update);
+        $useCustom = $request->get('use_custom', false);
+        $useDomain = $request->get('use_domain', false);
+        $nodePort = $app->grpc_port;
+
+        $this->servicePorts['grpc']['node'] = [$nodePort];
+
+        $save = [
+            'client_id' => $request->get('client_id'),
+            'grpc_port' =>  $nodePort,
+            'use_domain' => $useDomain,
+            'use_custom' => $useCustom,
+            'db_name' => $request->get('db_name'),
+        ];
+
+        if ($useDomain) {
+            $save['domain'] = $request->get('domain');
         }
-        return response($update);
+
+        if ($useCustom) {
+            $save['redis_host'] = $request->get('redis_host');
+            $save['redis_port'] = $request->get('redis_port');
+            $save['memcached_host'] = $request->get('memcached_host');
+            $save['db_type'] = $request->get('db_type');
+            $save['db_host'] = $request->get('db_host');
+            $save['db_port'] = $request->get('db_port');
+            $save['cache_driver'] = $request->get('cache_driver');
+            $save['session_driver'] = $request->get('session_driver');
+        }
+
+
+        $app->update($save);
+        $response = App::with(['client'])->find($app->id);
+        $names = [
+            'secret' => "client-secret-" . $app->path,
+            'config' => "client-config-" . $app->path,
+            'nginx' => "client-nginx-" . $app->path,
+            'grpc' => "client-grpc-" . $app->path,
+            'fpm' => "client-fpm-" . $app->path,
+        ];
+
+        $data = array();
+        $crlf = "\n---\n\n";
+        $this->makeServices($names, $data);
+        $this->makeSecret($request, $names, $data);
+        $this->makeConfigMap($request, $names, $data);
+        $this->makeDeplyments($names, $data);
+        $content = implode($crlf, $data);
+        $filename = "k8s-" . $response->id . ".yaml";
+        Storage::put($filename, $content);
+        return response($response, 200);
     }
 
     /**

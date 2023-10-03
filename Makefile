@@ -4,5 +4,8 @@ build:
 	docker build -t devoptimus/admin-nginx --target=nginx .
 
 up: build
-	docker compose up
+	docker compose up -d
+
+down:
+	docker compose down
 

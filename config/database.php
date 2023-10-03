@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'mysql'),
+    'default' => env('DB_CONNECTION', 'pgsql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -61,26 +61,25 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
-        ],
-
-        'mysql_root' => [
-            'driver' => 'mysql',
-            'url' => env('DATABASE_URL_ROOT'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE_ROOT', 'mysql'),
-            'username' => env('DB_USERNAME_ROOT', 'root'),
-            'password' => env('DB_PASSWORD_ROOT', ''),
-            'unix_socket' => env('DB_SOCKET_ROOT', ''),
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'super' => [
+                'driver' => 'mysql',
+                'url' => env('DATABASE_URL_SUPER'),
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '3306'),
+                'database' => env('DB_SUPER_DATABASE', null),
+                'username' => env('DB_SUPER_USERNAME', 'root'),
+                'password' => env('DB_SUPER_PASSWORD', ''),
+                'unix_socket' => env('DB_SOCKET', ''),
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'prefix' => '',
+                'prefix_indexes' => true,
+                'strict' => true,
+                'engine' => null,
+                'options' => extension_loaded('pdo_mysql') ? array_filter([
+                    PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                ]) : [],
+            ],
         ],
 
         'pgsql' => [
@@ -96,21 +95,20 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
-        ],
-
-        'pgsql_root' => [
-            'driver' => 'pgsql',
-            'url' => env('DATABASE_URL_ROOT'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE_ROOT', 'postgres'),
-            'username' => env('DB_USERNAME_ROOT', 'postgres'),
-            'password' => env('DB_PASSWORD_ROOT', ''),
-            'charset' => 'utf8',
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'search_path' => 'public',
-            'sslmode' => 'prefer',
+            'super' => [
+                'driver' => 'pgsql',
+                'url' => env('DATABASE_SUPER_URL'),
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '5432'),
+                'database' => env('DB_SUPER_DATABASE', null),
+                'username' => env('DB_SUPER_USERNAME', 'postgres'),
+                'password' => env('DB_SUPER_PASSWORD', ''),
+                'charset' => 'utf8',
+                'prefix' => '',
+                'prefix_indexes' => true,
+                'search_path' => 'public',
+                'sslmode' => 'prefer',
+            ]
         ],
 
         'sqlsrv' => [
@@ -126,8 +124,19 @@ return [
             'prefix_indexes' => true,
             // 'encrypt' => env('DB_ENCRYPT', 'yes'),
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+            'super' => [
+                'driver' => 'sqlsrv',
+                'url' => env('DATABASE_URL'),
+                'host' => env('DB_HOST', 'localhost'),
+                'port' => env('DB_PORT', '1433'),
+                'database' => env('DB_SUPER_DATABASE'),
+                'username' => env('DB_SUPER_USERNAME', 'sa'),
+                'password' => env('DB_SUPER_PASSWORD', ''),
+                'charset' => 'utf8',
+                'prefix' => '',
+                'prefix_indexes' => true,
+            ]
         ],
-
     ],
 
     /*
@@ -182,5 +191,10 @@ return [
         ],
 
     ],
+
+    'install' => [
+        'system' => ['password' => env('SYSTEM_PASSWORD', 'system')],
+        'admin' => ['password' => env('ADMIN_PASSWORD', 'admin')]
+    ]
 
 ];

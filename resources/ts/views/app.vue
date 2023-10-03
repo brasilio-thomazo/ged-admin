@@ -27,10 +27,10 @@ const store = useAppStore()
 const http = inject('http', axios)
 
 tab.setSlot({
-  list: { slot: AppList, icon: 'apps' },
-  create: { slot: AppCreate, icon: 'library_add' },
-  edit: { slot: AppEdit, icon: 'settings_applications' },
-  show: { slot: AppShow, icon: 'preview' },
+  list: { slot: shallowRef(AppList), icon: 'apps' },
+  create: { slot: shallowRef(AppCreate), icon: 'library_add' },
+  edit: { slot: shallowRef(AppEdit), icon: 'settings_applications' },
+  show: { slot: shallowRef(AppShow), icon: 'preview' },
   error: {},
 })
 
@@ -43,12 +43,12 @@ async function create() {
 
 async function edit(payload: App) {
   tab.closeFromType('show')
-  tab.addTab(payload.id, 'edit')
+  tab.addTab(payload.path, 'edit')
 }
 
 async function show(payload: App) {
   tab.closeFromType('edit')
-  tab.addTab(payload.id, 'show')
+  tab.addTab(payload.path, 'show')
 }
 
 try {

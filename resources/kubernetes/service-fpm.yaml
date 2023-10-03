@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-fpm
+spec:
+  selector:
+    app: client-fpm
+  ports:
+  - port: 9000
+    targetPort: 9000

@@ -14,14 +14,14 @@
           <input
             type="tel"
             id="document"
-            v-model="form.document"
+            v-model="form.identity"
             v-maska="document"
             data-maska="['###.###.###-##', '##.###.###/####-##']"
             pattern="^[0-9]{2,3}\.[0-9]{3}\.[0-9]{3}((\/[0-9]{4})?)-[0-9]{2}$"
             required
           />
-          <span v-if="error?.errors?.document" class="error">
-            {{ error.errors.document.join(',') }}
+          <span v-if="error?.errors?.identity" class="error">
+            {{ error.errors.identity.join(',') }}
           </span>
         </div>
         <div class="line">
@@ -111,15 +111,17 @@ import axios from 'axios'
 
 const props = defineProps<{ data: Client }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
-const init = computed(() => ({
-  name: props.data.name,
-  document: props.data.document,
-  phone: props.data.phone,
-  email: props.data.email,
-  scope: props.data.scope,
-  manager: props.data.manager,
-  role: props.data.role,
-}))
+const init = computed(
+  (): ClientRequest => ({
+    name: props.data.name,
+    identity: props.data.identity,
+    phone: props.data.phone,
+    email: props.data.email,
+    scope: props.data.scope,
+    manager: props.data.manager,
+    role: props.data.role,
+  })
+)
 
 const maskDetail = {
   masked: '',
@@ -141,7 +143,7 @@ async function save() {
   try {
     const request = {
       ...form.value,
-      document: document.value.unmasked,
+      identity: document.value.unmasked,
       phone: phone.value.unmasked,
     }
     const { data } = await http.put<Client>(`client/${props.data.id}`, request)

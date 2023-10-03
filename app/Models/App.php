@@ -14,7 +14,12 @@ class App extends Model
     protected $fillable = [
         'client_id',
         'application',
+        'path',
+        'subdomain',
+        'grpc_port',
+        'use_domain',
         'domain',
+        'use_custom',
         'memcached_host',
         'http_port',
         'redis_host',

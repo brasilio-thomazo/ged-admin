@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\AppController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\FileController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use Symfony\Component\Yaml\Yaml;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,12 +20,31 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
+Route::controller(FileController::class)->group(function () {
+    Route::get('k8s/{path}', 'show')->name('k8s.show');
+    Route::post('k8s/{app}', 'create')->middleware(['auth:web'])->name('k8s.create');
+});
+
 Route::post('/login', [ProfileController::class, 'login'])->name('auth.login');
 Route::get('me', [ProfileController::class, 'me'])->middleware(['auth:web'])->name('profile');
 Route::post('logout', [ProfileController::class, 'logout'])->middleware(['auth:web'])->name('logout');
 
 Route::get('/', fn () => view('app'))->name("home");
 Route::get('/php-info', fn () => phpinfo())->name('php-info');
+Route::get('/test', function () {
+    $home = preg_replace("/^\/(.+)\/public$/", "$1", $_SERVER['DOCUMENT_ROOT']);
+    $secret_file = sprintf("/%s/resources/kubernetes/client-secret.yaml", $home);
+
+    $secret = Yaml::parse(file_get_contents($secret_file));
+
+    $secret['data']['DB_PASSWORD'] = 'db password';
+    $secret_yaml = Yaml::dump($secret);
+
+    header('Content-type: text/plain');
+
+    return response($secret_yaml, 200, ['Content-type' => 'text/plain']);
+});
 
 Route::controller(GroupController::class)->group(function () {
     Route::get("/group", 'index')->name('group.web.index');
@@ -53,8 +74,8 @@ Route::controller(AppController::class)->group(function () {
     Route::get("/app", 'index')->name('app.web.index');
     Route::post("/app", 'store')->name('app.web.store');
     Route::delete("/app", 'destroy')->name('app.web.destroy');
-    Route::get("/app/{client}", 'show')->name('app.web.show');
-    Route::put("/app/{client}", 'update')->name('app.web.update');
+    Route::get("/app/{app}", 'show')->name('app.web.show');
+    Route::put("/app/{app}", 'update')->name('app.web.update');
 });
 
 

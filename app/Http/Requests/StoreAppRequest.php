@@ -22,29 +22,36 @@ class StoreAppRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rule_env = Rule::unique('apps')
-            ->where('db_type', '=', $this->db_type)
-            ->where('db_host', '=', $this->db_host)
-            ->where('db_port', '=', $this->db_port);
         $rule_domain = Rule::unique('apps')
             ->where('http_port', $this->http_port);
 
+        if ($this->use_custom) {
+            $rule_env = Rule::unique('apps')
+                ->where('db_type', $this->db_type)
+                ->where('db_host', $this->db_host)
+                ->where('db_port', $this->db_port);
+        } else {
+            $rule_env = Rule::unique('apps');
+        }
+
         return [
             'client_id'         => 'required|uuid|exists:clients,id',
-            'application'       => 'required|in:client,agent',
-            'domain'            => ['required', 'string', $rule_domain],
-            'http_port'         => 'nullable|integer',
-            'redis_host'        => 'required|regex:/^[a-z0-9.-]+$/',
-            'redis_port'        => 'nullable|integer',
+            'application'       => 'required|in:0,1',
+            'path'              => 'required|regex:/^[a-z0-9-]+$/|unique:apps,path',
+            'domain'            => 'required_if:use_domain,true|regex:/^[a-z0-9\.-]$/|unique:apps,domain',
+            'redis_host'        => 'required_if:use_custom,true|regex:/^[a-z0-9.-]+$/',
+            'redis_port'        => 'required_if:use_custom,true|integer',
             'redis_pass'        => 'nullable|string',
-            'db_type'           => 'required|string|in:mysql,pgsql,sqlite',
-            'db_host'           => 'required|string',
+            'db_type'           => 'required_if:use_custom,true|string|in:mysql,pgsql,sqlite',
+            'db_host'           => 'required_if:use_custom,true|string',
             'db_name'           => ['required', 'regex:/^[a-z0-9_]+$/', $rule_env],
-            'db_port'           => 'required|numeric',
-            'db_user'           => 'required|regex:/^[a-zA-Z0-9_]+$/',
-            'db_pass'           => 'nullable|string',
-            'cache_driver'      => 'nullable|in:redis,memcached,file',
-            'session_driver'    => 'nullable|in:redis,memcached,file',
+            'db_port'           => 'required_if:use_custom,true|numeric',
+            'super_user'        => 'required_if:use_custom,true|regex:/^[a-zA-Z0-9_]+$/',
+            'super_pass'        => 'required_if:use_custom,true|string',
+            'db_user'           => 'required_if:use_custom,true|regex:/^[a-zA-Z0-9_]+$/',
+            'db_pass'           => 'required_if:use_custom,true|string',
+            'cache_driver'      => 'required_if:use_custom,true|in:redis,memcached,file',
+            'session_driver'    => 'required_if:use_custom,true|in:redis,memcached,file',
         ];
     }
 }

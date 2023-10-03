@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-grpc-server
+spec:
+  selector:
+    matchLabels:
+      app: client-grpc-server
+  template:
+    metadata:
+      labels:
+        app: client-grpc-server
+    spec:
+      containers:
+      - name: client-grpc-server
+        image: devoptimus/ged-client-grpc-server
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 50051
+        envFrom:
+          - configMapRef:
+              name: "client-config"
+          - secretRef:
+              name: "client-secret"
