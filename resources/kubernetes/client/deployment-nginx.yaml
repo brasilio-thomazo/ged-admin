@@ -12,14 +12,14 @@ spec:
         app: client-nginx
     spec:
       containers:
-      - name: client-nginx
-        image: devoptimus/ged-client-nginx
-        resources:
-          limits:
-            memory: "128Mi"
-            cpu: "500m"
-        ports:
-        - containerPort: 80
-        envFrom:
-          - configMapRef:
-              name: "client-config"
+        - name: client-nginx
+          image: devoptimus/ged-client-nginx
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "120m"
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: "client-config"
