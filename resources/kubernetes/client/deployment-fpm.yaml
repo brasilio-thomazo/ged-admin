@@ -24,25 +24,25 @@ spec:
           args:
             - artisan
             - app:install
-          
+
       containers:
-      - name: client-fpm
-        image: devoptimus/ged-client-fpm
-        resources:
-          limits:
-            memory: "128Mi"
-            cpu: "500m"
-        ports:
-        - containerPort: 9000
-        envFrom:
-          - configMapRef:
-              name: "client-config"
-          - secretRef:
-              name: "client-secret"
-        volumeMounts:
-          - name: storage
-            mountPath: /home/app/public_html/storage/app
-  volumes:
-    - name: storage
-      persistentVolumeClaim:
-        claimName: storage-pvc
+        - name: client-fpm
+          image: devoptimus/ged-client-fpm
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: "client-config"
+            - secretRef:
+                name: "client-secret"
+          volumeMounts:
+            - name: storage
+              mountPath: /home/app/public_html/storage/app
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: storage-pvc

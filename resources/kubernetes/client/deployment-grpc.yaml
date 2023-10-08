@@ -12,23 +12,23 @@ spec:
         app: client-grpc-server
     spec:
       containers:
-      - name: client-grpc-server
-        image: devoptimus/ged-client-grpc-server
-        resources:
-          limits:
-            memory: "128Mi"
-            cpu: "500m"
-        ports:
-        - containerPort: 50051
-        envFrom:
-          - configMapRef:
-              name: "client-config"
-          - secretRef:
-              name: "client-secret"
-        volumeMounts:
-          - name: storage
-            mountPath: /home/app/public_html/storage/app
-  volumes:
-    - name: storage
-      persistentVolumeClaim:
-        claimName: storage-pvc
+        - name: client-grpc-server
+          image: devoptimus/ged-client-grpc-server
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 50051
+          envFrom:
+            - configMapRef:
+                name: "client-config"
+            - secretRef:
+                name: "client-secret"
+          volumeMounts:
+            - name: storage
+              mountPath: /home/app/public_html/storage/app
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: storage-pvc

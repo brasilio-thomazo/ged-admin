@@ -167,9 +167,9 @@ class AppController extends Controller
     {
         $yaml = Yaml::parse(file_get_contents($this->deployments['fpm']));
         $this->makeDeplyment($yaml, 'fpm', $names, 'devoptimus/ged-client-fpm');
-        foreach ($yaml['spec']['volumes'] as $k => $volume) {
+        foreach ($yaml['spec']['template']['spec']['volumes'] as $k => $volume) {
             if ($volume['name'] == 'storage') {
-                $yaml['spec']['volumes'][$k]['persistentVolumeClaim']['claimName'] = config('k8s.pvc.images');
+                $yaml['spec']['template']['spec']['volumes'][$k]['persistentVolumeClaim']['claimName'] = config('k8s.pvc.images');
             }
         }
         return Yaml::dump($yaml, 10, 2);
@@ -186,9 +186,9 @@ class AppController extends Controller
     {
         $yaml = Yaml::parse(file_get_contents($this->deployments['grpc']));
         $this->makeDeplyment($yaml, 'grpc', $names, 'devoptimus/ged-client-grpc-server');
-        foreach ($yaml['spec']['volumes'] as $k => $volume) {
+        foreach ($yaml['spec']['template']['spec']['volumes'] as $k => $volume) {
             if ($volume['name'] == 'storage') {
-                $yaml['spec']['volumes'][$k]['persistentVolumeClaim']['claimName'] = config('k8s.pvc.images');
+                $yaml['spec']['template']['spec']['volumes'][$k]['persistentVolumeClaim']['claimName'] = config('k8s.pvc.images');
             }
         }
         return Yaml::dump($yaml, 10, 2);
