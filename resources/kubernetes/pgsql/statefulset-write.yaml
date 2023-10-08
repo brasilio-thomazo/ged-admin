@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-writer
+spec:
+  selector:
+    matchLabels:
+      app: postgres-writer
+  serviceName: postgres-writer
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres-writer
+    spec:
+      containers:
+        - name: postgres-writer
+          image: devoptimus/postgres:latest
+          ports:
+            - containerPort: 5432
+              name: postgres-writer
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/writer
+          envFrom:
+            - secretRef:
+                name: "postgres-secret"
+          volumeMounts:
+            - name: storage
+              mountPath: /var/lib/postgresql
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: data-pvc

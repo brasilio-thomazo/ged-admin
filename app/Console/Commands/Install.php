@@ -30,14 +30,22 @@ class Install extends Command
      */
     public function handle()
     {
+        $connection = config("database.default", "pgsql");
+        print "Running config:cache\n";
         $buffer = "";
         $this->call("config:cache", [], $buffer);
         print $buffer;
 
+        print "Running createDB\n";
         $this->createDb();
 
-        $this->call("migrate", ['--force' => ''], $buffer);
-        print $buffer;
+        print "Running migrate\n";
+        try {
+            $this->call("migrate", ['--database' => $connection, '--force' => null], $buffer);
+            print $buffer;
+        } catch (Exception $ex) {
+            print $ex->getMessage() . "\n";
+        }
 
 
         $rw = ['group' => 'rw', 'user' => 'rw', 'client' => 'rw', 'app' => 'rw'];
@@ -83,24 +91,22 @@ class Install extends Command
     private function createDb()
     {
 
-        $connection = env('DB_CONNECTION', 'pgsql');
+        $connection = config("database.default", "pgsql");
         $section = "database.connections." . $connection;
         $database = config($section . ".database");
         $username = config($section . ".username");
         $password = config($section . ".password");
 
-        $name = $database;
-        config([$database => null]);
         $querys = [];
 
         if ($connection == 'pgsql') {
             $querys['create_user'] = "CREATE USER {$username} WITH PASSWORD '$password'";
-            $querys['create_db'] = "CREATE DATABASE $name OWNER $username";
-            $querys['grant'] = "GRANT ALL PRIVILEGES ON DATABASE $name TO $username";
+            $querys['create_db'] = "CREATE DATABASE $database OWNER $username";
+            $querys['grant'] = "GRANT ALL PRIVILEGES ON DATABASE $database TO $username";
         } else {
             $querys['create_user'] = "CREATE USER '$username'@'%' IDENTIFIED BY '$password'";
-            $querys['create_db'] = "CREATE DATABASE $name";
-            $querys['grant'] = "GRANT PRIVILEGE ON $name TO '$name'@'%s'";
+            $querys['create_db'] = "CREATE DATABASE $database";
+            $querys['grant'] = "GRANT PRIVILEGE ON $database TO '$database'@'%s'";
         }
 
         foreach ($querys as $q) {
@@ -113,8 +119,6 @@ class Install extends Command
                 printf("[ERROR]\n[%s]\n", $ex->getMessage());
             }
         }
-
-        config([$database => $name]);
     }
 
 

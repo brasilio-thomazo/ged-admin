@@ -15,6 +15,12 @@
             </div>
           </div>
           <div class="line">
+            <div class="label">GRPC:</div>
+            <div class="text upper">
+              {{ app.subdomain }}:{{ app.grpc_port }}
+            </div>
+          </div>
+          <div class="line">
             <div class="label">Instalação/Alteração</div>
             <div class="pre">kubectl apply -f {{ k8sURL }}</div>
           </div>

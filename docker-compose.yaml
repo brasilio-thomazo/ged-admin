@@ -1,87 +1,157 @@
 version: '3.8'
 services:
-  redis.admin:
-    container_name: redis.admin
+  redis:
+    container_name: redis
     image: redis:alpine
     command: ['redis-server', '--appendonly', 'yes']
-    networks:
-      - network-admin
-  postgres.admin:
-    container_name: postgres.admin
-    image: postgres:alpine
+  postgres-writer:
+    container_name: postgres-writer
+    image: devoptimus/postgres
     environment:
-      - POSTGRES_PASSWORD=${DB_SUPER_PASSWORD:-postgres}
-      - POSTGRES_USER=${DB_SUPER_USERNAME:-postgres}
-      - POSTGRES_DB=${DB_SUPER_DATABASE:-postgres}
-    networks:
-      - network-admin
-  admin.fpm:
-    container_name: admin.fpm
-    build:
-      context: .
-      target: fpm
-    image: devoptimus/admin-fpm
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USERNAME=postgres
+      - REPLICANT_USERNAME=replicant
+      - REPLICANT_PASSWORD=replicant
+      - LOG_STATEMENT=none
+    healthcheck:
+      test:
+        ['CMD', 'pg_isready', '-d', 'postgres', '-p', '5432', '-q', '-t', '5']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+  postgres-reader:
+    container_name: postgres-reader
+    image: devoptimus/postgres
     environment:
-      - UID=${UID:-1000}
-      - GID=${GID:-1000}
-
-      - APP_DEBUG=${APP_DEBUG:-true}
-      - APP_ENV=${APP_ENV:-local}
-      - APP_KEY="base64:CyUNByT3Wh2gIoRoibP52U1E7jKf1ef5MwHq29h2H9E="
-
-      - DB_SUPER_DATABASE=${DB_SUPER_DATABASE:-postgres}
-      - DB_SUPER_USERNAME=${DB_SUPER_USERNAME:-postgres}
-      - DB_SUPER_PASSWORD=${DB_SUPER_PASSWORD:-postgres}
-
-      - DB_CONNECTION=${DB_CONNECTION:-pgsql}
-      - DB_HOST=${DB_HOST:-postgres.admin}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_DATABASE=${DB_DATABASE:-db_admin}
-      - DB_USERNAME=${DB_USERNAME:-admin}
-      - DB_PASSWORD=${DB_PASSWORD:-admin}
-      - REDIS_HOST=${REDIS_HOST:-redis.admin}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - CACHE_DRIVER=${CACHE_DRIVER:-redis}
-      - SESSION_DRIVER=${SESSION_DRIVER:-redis}
-    volumes:
-      - .:/home/app/public_html
+      - REPLICANT_USERNAME=replicant
+      - REPLICANT_PASSWORD=replicant
+      - MASTER_SERVER=postgres-writer
+      - MASTER_PORT=5432
+      - SLOT_NAME=master
+      - LOG_STATEMENT=none
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-d', 'postgres', '-p', '5432']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
     depends_on:
-      - redis.admin
-      - postgres.admin
-    networks:
-      - network-admin
-  admin.nginx:
-    container_name: admin.nginx
-    build:
-      context: .
-      target: nginx
-    image: devoptimus/admin-nginx
-    ports:
-      - ${APP_PORT:-0}:80
-    environment:
-      - FPM_HOST="admin.fpm:9000"
-    depends_on:
-      - admin.fpm
-    volumes:
-      - ./public:/home/app/public_html/public
-    networks:
-      - network-admin
-  admin.node:
-    container_name: admin.node
+      postgres-writer:
+        condition: service_healthy
+  ged-admin-node:
+    container_name: ged-admin-node
+    image: devoptimus/ged-admin-node
     build:
       context: .
       dockerfile: Dockerfile
       target: node
-    image: devoptimus/admin-node
+    command: ['sleep', 'infinity']
+  ged-admin-cli:
+    container_name: ged-admin-cli
+    image: devoptimus/ged-admin-cli
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: cli
+    environment:
+      - APP_KEY=base64:CyUNByT3Wh2gIoRoibP52U1E7jKf1ef5MwHq29h2H9E=
+      - CLIENT_DOMAIN=optimus.dev.br
+      - APP_DEBUG=false
+      - APP_ENV=local
+      - APP_NAME=AdminPanel
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres-writer
+      - DB_PORT="5432"
+      - DB_DATABASE=db_admin
+      - DB_SUPER_DATABASE=postgres
+      - DB_SUPER_USERNAME=postgres
+      - DB_SUPER_PASSWORD=postgres
+      - DB_USERNAME=optimus
+      - DB_PASSWORD=optimus
+      - DB_READER_HOST=postgres-reader
+      - DB_WRITER_HOST=postgres-writer
+      - REDIS_HOST=redis
+      - REDIS_PORT="6379"
+      - MEMCACHED_HOST=memchached
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=info
+      - BROADCAST_DRIVER=log
+      - CACHE_DRIVER=redis
+      - FILESYSTEM_DISK=local
+      - QUEUE_CONNECTION=redis
+      - SESSION_DRIVER=redis
+      - SESSION_LIFETIME="120"
+    depends_on:
+      postgres-writer:
+        condition: service_healthy
+      postgres-reader:
+        condition: service_healthy
+    command: ['php', 'artisan', 'app:install']
+  ged-admin-fpm:
+    container_name: ged-admin-fpm
+    image: devoptimus/ged-admin-fpm
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: fpm
+    environment:
+      - APP_KEY=base64:CyUNByT3Wh2gIoRoibP52U1E7jKf1ef5MwHq29h2H9E=
+      - CLIENT_DOMAIN=optimus.dev.br
+      - APP_DEBUG=false
+      - APP_ENV=loccal
+      - APP_URL=localhost:8080
+      - APP_NAME="AdminPanel"
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres-writer
+      - DB_PORT="5432"
+      - DB_DATABASE=db_admin
+      - DB_SUPER_DATABASE=postgres
+      - DB_SUPER_USERNAME=postgres
+      - DB_SUPER_PASSWORD=postgres
+      - DB_USERNAME=optimus
+      - DB_PASSWORD=optimus
+      - DB_READER_HOST=postgres-reader
+      - DB_WRITER_HOST=postgres-writer
+      - REDIS_HOST=redis
+      - REDIS_PORT="6379"
+      - MEMCACHED_HOST=memchached
+      - LOG_CHANNEL=stdout
+      - LOG_LEVEL=info
+      - BROADCAST_DRIVER=log
+      - CACHE_DRIVER=redis
+      - FILESYSTEM_DISK=local
+      - QUEUE_CONNECTION=redis
+      - SESSION_DRIVER=redis
+      - SESSION_LIFETIME="120"
+    depends_on:
+      postgres-writer:
+        condition: service_healthy
+      postgres-reader:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'nc', '-z', 'localhost', '9000']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+  ged-admin-nginx:
+    container_name: ged-admin-nginx
+    image: devoptimus/ged-admin-nginx
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: nginx
     ports:
-      - 3000:3000
-    volumes:
-      - .:/home/app/public_html
-      - ./node_modules:/home/app/public_html/node_modules
-    command: ['npm', 'run', 'dev']
-    networks:
-      - network-admin
-networks:
-  network-admin:
-    name: network-admin
-    driver: bridge
+      - 8080:80
+    environment:
+      - FPM_HOST="ged-admin-fpm:9000"
+    depends_on:
+      ged-admin-fpm:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', 'http://localhost']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 2s

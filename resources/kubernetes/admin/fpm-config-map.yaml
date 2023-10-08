@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ged-admin-config
+data:
+  APP_DEBUG: "false"
+  APP_ENV: local
+  APP_NAME: admin-panel
+
+  DB_CONNECTION: pgsql
+  DB_WRITER_HOST: postgres-writer
+  DB_WRITER_PORT: "5432"
+  DB_READER_HOST: postgres-reader
+  DB_READER_PORT: "5432"
+  DB_DATABASE: db_admin
+  
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  
+  MEMCACHED_HOST: memchached
+
+  LOG_CHANNEL: stdout
+  LOG_LEVEL: info
+
+  BROADCAST_DRIVER: log
+
+  CACHE_DRIVER: redis
+  SESSION_DRIVER: redis
+  SESSION_LIFETIME: "120"
+  QUEUE_CONNECTION: redis
+
+  FILESYSTEM_DISK: local
+  
+  K8S_PVC_IMAGES: images-pvc
+  CLIENT_DOMAIN: optimus.dev.br
+
+
+

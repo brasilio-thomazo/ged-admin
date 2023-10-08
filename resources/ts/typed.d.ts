@@ -181,6 +181,7 @@ declare global {
     started_at?: string
     created_at: string
     updated_at: string
+    grpc_port: number
     client: Client
   }
   interface AppRequest {

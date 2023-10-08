@@ -20,28 +20,25 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: '.'
-          target: 'fpm'
+          target: 'cli'
           push: true
           tags: |
-            devoptimus/ged-admin-fpm:0.0.5
-            devoptimus/ged-admin-fpm:latest
+            devoptimus/ged-admin-cli:latest
 
-      - name: Build php-composer image
+      - name: Build php-fpm image
         uses: docker/build-push-action@v5
         with:
           context: '.'
-          target: 'node'
+          target: 'fpm'
           push: true
           tags: |
-            devoptimus/ged-admin-node:0.0.5
-            devoptimus/ged-admin-node:latest
+            devoptimus/ged-admin-fpm:latest
 
-      - name: Build php-fpm image
+      - name: Build nginx image
         uses: docker/build-push-action@v5
         with:
           context: '.'
           target: 'nginx'
           push: true
           tags: |
-            devoptimus/ged-admin-nginx:0.0.5
             devoptimus/ged-admin-nginx:latest

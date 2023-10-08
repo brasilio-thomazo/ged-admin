@@ -1,0 +1,203 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  serviceName: redis
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+        command: ["redis-server", "--appendonly", "yes"]
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        ports:
+        - containerPort: 6379
+          name: redis
+        volumeMounts:
+        - name: cache
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: cache
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ged-admin-config
+data:
+  UID: "1000"
+  GID: "1000"
+
+  CLIENT_DOMAIN: optimus.dev.br
+
+  APP_DEBUG: "false"
+  APP_ENV: local
+  APP_NAME: AdminPanel
+
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres-writer
+  DB_PORT: "5432"
+  DB_DATABASE: db_admin
+
+  DB_READER_HOST: postgres-reader
+  DB_WRITER_HOST: postgres-writer
+  
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  
+  MEMCACHED_HOST: memchached
+
+  LOG_CHANNEL: stdout
+  LOG_LEVEL: info
+
+  BROADCAST_DRIVER: log
+
+  CACHE_DRIVER: redis
+  FILESYSTEM_DISK: local
+  QUEUE_CONNECTION: redis
+  SESSION_DRIVER: redis
+  SESSION_LIFETIME: "120"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ged-admin-secret
+type: Opaque
+data:
+  APP_KEY: YmFzZTY0OkNqUjJWbjRVK0dUeXcrUEpLRTRhckNubWhGWk0xVldmbndHNTZ4cytSQk09Cg==
+  
+  SYSTEM_PASSWORD: c3lzdGVt
+  ADMIN_PASSWORD: YWRtaW4=
+
+  DB_USERNAME: b3B0aW11cw==
+  DB_PASSWORD: cGFzc3dvcmQ=
+  
+  DB_SUPER_DATABASE: cG9zdGdyZXM=
+  DB_SUPER_USERNAME: cG9zdGdyZXM=
+  DB_SUPER_PASSWORD: cG9zdGdyZXM=
+
+  REDIS_PASSWORD: bnVsbA==
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ged-admin-fpm
+spec:
+  selector:
+    matchLabels:
+      app: ged-admin-fpm
+  template:
+    metadata:
+      labels:
+        app: ged-admin-fpm
+    spec:
+      initContainers:
+        - name: install
+          image: devoptimus/ged-admin-cli
+          envFrom:
+            - configMapRef:
+                name: "ged-admin-config"
+            - secretRef:
+                name: "ged-admin-secret"
+          command:
+            - php
+          args:
+            - artisan
+            - app:install
+      containers:
+        - name: ged-admin-fpm
+          image: devoptimus/ged-admin-fpm
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "300m"
+          ports:
+            - containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: "ged-admin-config"
+            - secretRef:
+                name: "ged-admin-secret"
+          volumeMounts:
+            - name: storage
+              mountPath: /home/app/public_html/storage/app
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: k8s-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ged-admin-fpm
+spec:
+  selector:
+    app: ged-admin-fpm
+  ports:
+    - port: 9000
+      targetPort: 9000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ged-admin-nginx
+spec:
+  selector:
+    matchLabels:
+      app: ged-admin-nginx
+  template:
+    metadata:
+      labels:
+        app: ged-admin-nginx
+    spec:
+      containers:
+      - name: ged-admin-nginx
+        image: devoptimus/ged-admin-nginx:latest
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "300m"
+        ports:
+        - containerPort: 80
+        env:
+          - name: FPM_HOST
+            value: "ged-admin-fpm:9000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ged-admin-nginx
+spec:
+  type: LoadBalancer
+  selector:
+    app: ged-admin-nginx
+  ports:
+  - port: 80
+    targetPort: 80

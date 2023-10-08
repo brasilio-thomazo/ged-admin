@@ -44,10 +44,18 @@ return [
         ],
 
         'mysql' => [
+            'read' => [
+                'host' => env('DB_READER_HOST', '127.0.0.1'),
+                'port' => env('DB_READER_PORT', '3306'),
+            ],
+            'write' => [
+                'host' => env('DB_READER_HOST', '127.0.0.1'),
+                'port' => env('DB_READER_PORT', '3306'),
+            ],
             'driver' => 'mysql',
             'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
+            //'host' => env('DB_HOST', '127.0.0.1'),
+            //'port' => env('DB_PORT', '3306'),
             'database' => env('DB_DATABASE', 'forge'),
             'username' => env('DB_USERNAME', 'forge'),
             'password' => env('DB_PASSWORD', ''),
@@ -62,10 +70,18 @@ return [
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
             'super' => [
+                'read' => [
+                    'host' => env('DB_READER_HOST', '127.0.0.1'),
+                    'port' => env('DB_READER_PORT', '3306'),
+                ],
+                'write' => [
+                    'host' => env('DB_READER_HOST', '127.0.0.1'),
+                    'port' => env('DB_READER_PORT', '3306'),
+                ],
                 'driver' => 'mysql',
                 'url' => env('DATABASE_URL_SUPER'),
-                'host' => env('DB_HOST', '127.0.0.1'),
-                'port' => env('DB_PORT', '3306'),
+                // 'host' => env('DB_HOST', '127.0.0.1'),
+                // 'port' => env('DB_PORT', '3306'),
                 'database' => env('DB_SUPER_DATABASE', null),
                 'username' => env('DB_SUPER_USERNAME', 'root'),
                 'password' => env('DB_SUPER_PASSWORD', ''),
@@ -85,8 +101,16 @@ return [
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
+            'read' => [
+                'host' => env('DB_READER_HOST', '127.0.0.1'),
+                'port' => env('DB_READER_PORT', '5432'),
+            ],
+            'write' => [
+                'host' => env('DB_WRITER_HOST', '127.0.0.1'),
+                'port' => env('DB_WRITER_PORT', '5432'),
+            ],
+            // 'host' => env('DB_HOST', '127.0.0.1'),
+            // 'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'forge'),
             'username' => env('DB_USERNAME', 'forge'),
             'password' => env('DB_PASSWORD', ''),
@@ -96,10 +120,18 @@ return [
             'search_path' => 'public',
             'sslmode' => 'prefer',
             'super' => [
+                'read' => [
+                    'host' => env('DB_READER_HOST', '127.0.0.1'),
+                    'port' => env('DB_READER_PORT', '5432'),
+                ],
+                'write' => [
+                    'host' => env('DB_WRITER_HOST', '127.0.0.1'),
+                    'port' => env('DB_WRITER_PORT', '5432'),
+                ],
                 'driver' => 'pgsql',
                 'url' => env('DATABASE_SUPER_URL'),
-                'host' => env('DB_HOST', '127.0.0.1'),
-                'port' => env('DB_PORT', '5432'),
+                // 'host' => env('DB_HOST', '127.0.0.1'),
+                // 'port' => env('DB_PORT', '5432'),
                 'database' => env('DB_SUPER_DATABASE', null),
                 'username' => env('DB_SUPER_USERNAME', 'postgres'),
                 'password' => env('DB_SUPER_PASSWORD', ''),

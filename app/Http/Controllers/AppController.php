@@ -13,6 +13,7 @@ use Symfony\Component\Yaml\Yaml;
 
 class AppController extends Controller
 {
+    private string $home;
     private string $secret;
     private string $config_map;
 
@@ -50,13 +51,12 @@ class AppController extends Controller
     private int $portMin = 30000;
     private int $portMax = 32767;
     private int $grpcPort = 50051;
-    private int $fpmPort = 9000;
 
     public function __construct()
     {
 
-        $home = preg_replace("/^\/(.+)\/public$/", "$1", $_SERVER['DOCUMENT_ROOT']);
-        $base = sprintf("/%s/resources/kubernetes", $home);
+        $this->home = preg_replace("/^\/(.+)\/public$/", "$1", $_SERVER['DOCUMENT_ROOT']);
+        $base = sprintf("/%s/resources/kubernetes/client", $this->home);
         $this->secret = $base . '/secret.yaml';
         $this->config_map = $base . '/config-map.yaml';
         $this->deployments['nginx'] = $base . '/deployment-nginx.yaml';
@@ -67,7 +67,6 @@ class AppController extends Controller
         $this->services['grpc'] = $base . '/service-grpc.yaml';
         $this->services['fpm'] = $base . '/service-fpm.yaml';
         $this->grpcPort = config('grpc.port', 50051);
-        $this->fpmPort = config('fpm.port', 9000);
     }
 
     /**
@@ -168,6 +167,11 @@ class AppController extends Controller
     {
         $yaml = Yaml::parse(file_get_contents($this->deployments['fpm']));
         $this->makeDeplyment($yaml, 'fpm', $names, 'devoptimus/ged-client-fpm');
+        foreach ($yaml['spec']['volumes'] as $k => $volume) {
+            if ($volume['name'] == 'storage') {
+                $yaml['spec']['volumes'][$k]['persistentVolumeClaim']['claimName'] = config('k8s.pvc.images');
+            }
+        }
         return Yaml::dump($yaml, 10, 2);
     }
 
@@ -182,18 +186,24 @@ class AppController extends Controller
     {
         $yaml = Yaml::parse(file_get_contents($this->deployments['grpc']));
         $this->makeDeplyment($yaml, 'grpc', $names, 'devoptimus/ged-client-grpc-server');
-        // $this->setContainerPort($yaml['spec']['template']['spec']['containers'], ['devoptimus/ged-client-grpc-server'], [[$port]]);
+        foreach ($yaml['spec']['volumes'] as $k => $volume) {
+            if ($volume['name'] == 'storage') {
+                $yaml['spec']['volumes'][$k]['persistentVolumeClaim']['claimName'] = config('k8s.pvc.images');
+            }
+        }
         return Yaml::dump($yaml, 10, 2);
     }
 
-    private function makeConfigMap(Request $request, array $names, array &$data)
+    private function makeConfigMap(Request $request, App $app, array $names, array &$data)
     {
         $yaml = Yaml::parse(file_get_contents($this->config_map));
         $custom = $request->get("custom", false);
 
         $section = "database.connections." . config("database.default");
-        $host = config($section . ".host");
-        $port = config($section . ".port");
+        $writer_host = config($section . ".write.host");
+        $writer_port = config($section . ".write.port");
+        $reader_host = config($section . ".read.host");
+        $reader_port = config($section . ".read.port");
 
         $redis_host = config("database.redis.default.host");
         $redis_port = config("database.redis.default.port");
@@ -202,17 +212,19 @@ class AppController extends Controller
 
         $yaml['data']['DB_CONNECTION'] = $custom ? $request->db_type : config('database.default', 'pgsql');
         $yaml['data']['DB_DATABASE'] = $request->db_name;
-        $yaml['data']['DB_HOST'] = $custom ? $request->db_host : $host;
-        $yaml['data']['DB_PORT'] = $custom ? $request->db_port : $port;
+        $yaml['data']['DB_WRITER_HOST'] = $custom ? $request->db_writer_host : $writer_host;
+        $yaml['data']['DB_WRITER_PORT'] = $custom ? $request->db_writer_port : $writer_port;
+        $yaml['data']['DB_READER_HOST'] = $custom ? $request->db_reader_host : $reader_host;
+        $yaml['data']['DB_READER_PORT'] = $custom ? $request->db_reader_port : $reader_port;
         $yaml['data']['SESSION_DRIVER'] = $custom ? $request->session_driver : config("session.driver", 'file');
         $yaml['data']['CACHE_DRIVER'] = $custom ? $request->session_driver : config("cache.default", "file");
         $yaml['data']['FPM_HOST'] = $names['fpm'] . ':9000';
         $yaml['data']['GRPC_HOST'] = $names['grpc'];
         $yaml['data']['GRPC_PORT'] = strval($this->grpcPort);
-        $yaml['data']['GRPC_URL'] = $names['grpc'] . ':' . $this->grpcPort;
 
         $yaml['data']['REDIS_HOST'] = $custom ? $request->redis_host : $redis_host;
         $yaml['data']['REDIS_PORT'] = $custom ? $request->redis_port : $redis_port;
+        $yaml['data']['UPLOAD_IMAGE'] = $this->home . "/" . $app->path;
         $data[] = Yaml::dump($yaml, 10, 2, Yaml::DUMP_NUMERIC_KEY_AS_STRING);
     }
 
@@ -314,26 +326,26 @@ class AppController extends Controller
 
 
         $app = App::create($save);
-        $response = App::with(['client'])->find($app->id);
+        $app->client;
         $name = $request->get('path', $app->id);
         $names = [
-            'secret' => "client-secret-" . $name,
-            'config' => "client-config-" . $name,
-            'nginx' => "client-nginx-" . $name,
-            'grpc' => "client-grpc-" . $name,
-            'fpm' => "client-fpm-" . $name,
+            'secret' => "ged-client-secret-" . $name,
+            'config' => "ged-client-config-" . $name,
+            'nginx' => "ged-client-nginx-" . $name,
+            'grpc' => "ged-client-grpc-" . $name,
+            'fpm' => "ged-client-fpm-" . $name,
         ];
 
         $data = array();
         $crlf = "\n---\n\n";
         $this->makeServices($names, $data);
         $this->makeSecret($request, $names, $data);
-        $this->makeConfigMap($request, $names, $data);
+        $this->makeConfigMap($request, $app, $names, $data);
         $this->makeDeplyments($names, $data);
         $content = implode($crlf, $data);
-        $filename = "k8s-" . $response->id . ".yaml";
+        $filename = "k8s-" . $app->id . ".yaml";
         Storage::put($filename, $content);
-        return response($response, 201);
+        return response($app, 201);
     }
 
     /**
@@ -349,6 +361,8 @@ class AppController extends Controller
      */
     public function update(UpdateAppRequest $request, App $app)
     {
+
+        // dd(config("database.connections"));
         $useCustom = $request->get('use_custom', false);
         $useDomain = $request->get('use_domain', false);
         $nodePort = $app->grpc_port;
@@ -380,7 +394,7 @@ class AppController extends Controller
 
 
         $app->update($save);
-        $response = App::with(['client'])->find($app->id);
+        $app->client;
         $names = [
             'secret' => "client-secret-" . $app->path,
             'config' => "client-config-" . $app->path,
@@ -393,12 +407,12 @@ class AppController extends Controller
         $crlf = "\n---\n\n";
         $this->makeServices($names, $data);
         $this->makeSecret($request, $names, $data);
-        $this->makeConfigMap($request, $names, $data);
+        $this->makeConfigMap($request, $app, $names, $data);
         $this->makeDeplyments($names, $data);
         $content = implode($crlf, $data);
-        $filename = "k8s-" . $response->id . ".yaml";
+        $filename = "k8s-" . $app->id . ".yaml";
         Storage::put($filename, $content);
-        return response($response, 200);
+        return response($app, 200);
     }
 
     /**

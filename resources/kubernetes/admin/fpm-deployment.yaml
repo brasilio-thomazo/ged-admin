@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ged-admin-fpm
+spec:
+  selector:
+    matchLabels:
+      app: ged-admin-fpm
+  template:
+    metadata:
+      labels:
+        app: ged-admin-fpm
+    spec:
+      initContainers:
+        - name: install
+          image: devoptimus/ged-admin-fpm
+          envFrom:
+            - configMapRef:
+                name: "ged-admin-config"
+            - secretRef:
+                name: "ged-admin-secret"
+          command:
+            - php
+          args:
+            - artisan
+            - app:install
+
+      containers:
+        - name: ged-admin-fpm
+          image: devoptimus/ged-admin-fpm
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: "ged-admin-config"
+            - secretRef:
+                name: "ged-admin-secret"
+          volumeMounts:
+            - name: storage
+              mountPath: /home/app/public_html/storage/app
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: k8s-pvc

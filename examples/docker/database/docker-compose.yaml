@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  redis:
+    container_name: redis
+    image: redis:alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - 6379:6379
+  postgres-writer:
+    container_name: postgres-writer
+    image: devoptimus/postgres
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USERNAME=postgres
+      - REPLICANT_USERNAME=replicant
+      - REPLICANT_PASSWORD=replicant
+    healthcheck:
+      test:
+        ['CMD', 'pg_isready', '-d', 'postgres', '-p', '5432', '-q', '-t', '5']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+    ports:
+      - 5432:5432
+  postgres-reader:
+    container_name: postgres-reader
+    image: devoptimus/postgres
+    environment:
+      - REPLICANT_USERNAME=replicant
+      - REPLICANT_PASSWORD=replicant
+      - MASTER_SERVER=postgres-writer
+      - MASTER_PORT=5432
+      - SLOT_NAME=master
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-d', 'postgres', '-p', '5432']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+    depends_on:
+      postgres-writer:
+        condition: service_healthy
+    ports:
+      - 5433:5432

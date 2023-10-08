@@ -25,3 +25,10 @@ spec:
               name: "client-config"
           - secretRef:
               name: "client-secret"
+        volumeMounts:
+          - name: storage
+            mountPath: /home/app/public_html/storage/app
+  volumes:
+    - name: storage
+      persistentVolumeClaim:
+        claimName: storage-pvc

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: client-config
+data:
+  APP_ENV: local
+  APP_NAME: ged-client
+  
+  LOG_CHANNEL: stdout
+  LOG_LEVEL: debug
+  BROADCAST_DRIVER: log
+
+  DB_CONNECTION: pgsql
+  DB_WRITER_HOST: localhost
+  DB_WRITER_PORT: "5432"
+  DB_READER_HOST: localhost
+  DB_READER_PORT: "5432"
+  DB_DATABASE: db_admin
+
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+
+  CACHE_DRIVER: redis
+  SESSION_DRIVER: redis
+  SESSION_LIFETIME: "120"
+  QUEUE_CONNECTION: redis
+
+  FILESYSTEM_DISK: local
+
+  MEMCACHED_HOST: memchached
+
+  GRPC_PORT: "50051"
+  UPLOAD_IMAGE: /home/app/public_html/storage/app/client

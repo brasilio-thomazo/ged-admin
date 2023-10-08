@@ -22,9 +22,6 @@ class StoreAppRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rule_domain = Rule::unique('apps')
-            ->where('http_port', $this->http_port);
-
         if ($this->use_custom) {
             $rule_env = Rule::unique('apps')
                 ->where('db_type', $this->db_type)

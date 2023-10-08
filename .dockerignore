@@ -1,4 +1,11 @@
 /vendor
 /node_modules
-composer.lock
-Dockerfile
+*.log
+.env
+.bladeformatter
+.editorconfig
+.prettierrc
+.git*
+.git
+public/hot
+/examples
