@@ -1,12 +1,11 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: data-pvc
+  name: ged-admin-pvc
 spec:
-  storageClassName: data
   resources:
     requests:
-      storage: 4Gi
+      storage: 500Mi
   volumeMode: Filesystem
   accessModes:
     - ReadWriteOnce

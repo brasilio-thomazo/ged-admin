@@ -13,10 +13,10 @@ data:
   DB_READER_HOST: postgres-reader
   DB_READER_PORT: "5432"
   DB_DATABASE: db_admin
-  
+
   REDIS_HOST: redis
   REDIS_PORT: "6379"
-  
+
   MEMCACHED_HOST: memchached
 
   LOG_CHANNEL: stdout
@@ -30,9 +30,7 @@ data:
   QUEUE_CONNECTION: redis
 
   FILESYSTEM_DISK: local
-  
+
   K8S_PVC_IMAGES: images-pvc
   CLIENT_DOMAIN: optimus.dev.br
-
-
-
+  GRPC_PORT: "50051"

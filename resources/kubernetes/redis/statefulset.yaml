@@ -14,20 +14,20 @@ spec:
         app: redis
     spec:
       containers:
-      - name: redis
-        image: redis:alpine
-        command: ["redis-server", "--appendonly", "yes"]
-        ports:
-        - containerPort: 6379
-          name: redis
-        volumeMounts:
-        - name: cache
-          mountPath: /usr/share/nginx/html
+        - name: redis
+          image: redis:alpine
+          command: ["redis-server", "--appendonly", "yes"]
+          ports:
+            - containerPort: 6379
+              name: redis
+          volumeMounts:
+            - name: cache
+              mountPath: /data
   volumeClaimTemplates:
-  - metadata:
-      name: cache
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 1Gi
+    - metadata:
+        name: cache
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

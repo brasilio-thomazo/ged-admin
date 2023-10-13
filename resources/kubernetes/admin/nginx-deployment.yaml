@@ -12,14 +12,14 @@ spec:
         app: ged-admin-nginx
     spec:
       containers:
-      - name: ged-admin-nginx
-        image: devoptimus/ged-admin-nginx:latest
-        resources:
-          limits:
-            memory: "128Mi"
-            cpu: "500m"
-        ports:
-        - containerPort: 80
-        env:
-          - name: FPM_HOST
-            value: "ged-admin-fpm:9000"
+        - name: ged-admin-nginx
+          image: devoptimus/ged-admin-nginx:latest
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "50m"
+          ports:
+            - containerPort: 80
+          env:
+            - name: FPM_HOST
+              value: "ged-admin-fpm:9000"

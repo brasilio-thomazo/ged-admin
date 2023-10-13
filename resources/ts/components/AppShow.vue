@@ -114,6 +114,6 @@ const k8sURL = ref('')
 
 onMounted(async () => {
   const { data } = await http.post(`k8s/${app.value.id}`, {})
-  k8sURL.value = data.url
+  k8sURL.value = `'${data.url}'`
 })
 </script>

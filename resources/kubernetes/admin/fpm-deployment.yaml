@@ -13,7 +13,7 @@ spec:
     spec:
       initContainers:
         - name: install
-          image: devoptimus/ged-admin-fpm
+          image: devoptimus/ged-admin-cli
           envFrom:
             - configMapRef:
                 name: "ged-admin-config"
@@ -30,8 +30,8 @@ spec:
           image: devoptimus/ged-admin-fpm
           resources:
             limits:
-              memory: "256Mi"
-              cpu: "500m"
+              memory: "128Mi"
+              cpu: "100m"
           ports:
             - containerPort: 9000
           envFrom:
@@ -45,4 +45,4 @@ spec:
       volumes:
         - name: storage
           persistentVolumeClaim:
-            claimName: k8s-pvc
+            claimName: ged-admin-pvc
