@@ -396,11 +396,11 @@ class AppController extends Controller
         $app->update($save);
         $app->client;
         $names = [
-            'secret' => "client-secret-" . $app->path,
-            'config' => "client-config-" . $app->path,
-            'nginx' => "client-nginx-" . $app->path,
-            'grpc' => "client-grpc-" . $app->path,
-            'fpm' => "client-fpm-" . $app->path,
+            'secret' => "ged-client-secret-" . $app->path,
+            'config' => "ged-client-config-" . $app->path,
+            'nginx' => "ged-client-nginx-" . $app->path,
+            'grpc' => "ged-client-grpc-" . $app->path,
+            'fpm' => "ged-client-fpm-" . $app->path,
         ];
 
         $data = array();
