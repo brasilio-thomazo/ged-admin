@@ -14,6 +14,7 @@ spec:
       containers:
         - name: client-grpc-server
           image: devoptimus/ged-client-grpc-server
+          imagePullPolicy: Always
           resources:
             limits:
               memory: "128Mi"

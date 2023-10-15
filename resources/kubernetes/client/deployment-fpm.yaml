@@ -28,10 +28,11 @@ spec:
       containers:
         - name: client-fpm
           image: devoptimus/ged-client-fpm
+          imagePullPolicy: Always
           resources:
             limits:
               memory: "128Mi"
-              cpu: "50m"
+              cpu: "100m"
           ports:
             - containerPort: 9000
           envFrom:

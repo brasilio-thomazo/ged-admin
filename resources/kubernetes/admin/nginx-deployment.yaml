@@ -14,6 +14,7 @@ spec:
       containers:
         - name: ged-admin-nginx
           image: devoptimus/ged-admin-nginx:latest
+          imagePullPolicy: Always
           resources:
             limits:
               memory: "128Mi"

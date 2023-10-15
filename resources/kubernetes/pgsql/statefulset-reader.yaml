@@ -20,24 +20,23 @@ spec:
             - containerPort: 5432
               name: postgres-reader
           env:
-            - name: PGDATA
-              value: /var/lib/postgresql/reader
             - name: MASTER_SERVER
               value: postgres-writer
             - name: MASTER_PORT
               value: "5432"
             - name: SLOT_NAME
               value: master
-          readinessProbe:
-            exec:
-              command: ["/usr/bin/pg_isready", "-d", "postgres", "-p", "5432"]
           envFrom:
             - secretRef:
                 name: "postgres-secret"
           volumeMounts:
             - name: storage
               mountPath: /var/lib/postgresql
-      volumes:
-        - name: storage
-          persistentVolumeClaim:
-            claimName: postgres-pvc
+  volumeClaimTemplates:
+    - metadata:
+        name: storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

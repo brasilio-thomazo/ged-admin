@@ -28,6 +28,7 @@ spec:
       containers:
         - name: ged-admin-fpm
           image: devoptimus/ged-admin-fpm
+          imagePullPolicy: Always
           resources:
             limits:
               memory: "128Mi"
