@@ -224,7 +224,7 @@ class AppController extends Controller
 
         $yaml['data']['REDIS_HOST'] = $custom ? $request->redis_host : $redis_host;
         $yaml['data']['REDIS_PORT'] = $custom ? $request->redis_port : $redis_port;
-        $yaml['data']['UPLOAD_IMAGE'] = $this->home . "/" . $app->path;
+        $yaml['data']['UPLOAD_IMAGE'] = $this->home . "/storage/app/" . $app->path;
         $data[] = Yaml::dump($yaml, 10, 2, Yaml::DUMP_NUMERIC_KEY_AS_STRING);
     }
 
