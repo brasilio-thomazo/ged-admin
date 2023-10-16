@@ -55,7 +55,7 @@ class AppController extends Controller
     public function __construct()
     {
 
-        $this->home = preg_replace("/^\/(.+)\/public$/", "$1", $_SERVER['DOCUMENT_ROOT']);
+        $this->home = preg_replace("/^\/(.+)\/public$/", "/$1", $_SERVER['DOCUMENT_ROOT']);
         $base = sprintf("/%s/resources/kubernetes/client", $this->home);
         $this->secret = $base . '/secret.yaml';
         $this->config_map = $base . '/config-map.yaml';
