@@ -9,7 +9,6 @@ build:
 	docker build -t devoptimus/ged-admin-nginx --target=nginx .
 
 push:
-	docker login -u $(username)
 	docker push devoptimus/ged-admin-composer
 	docker push devoptimus/ged-admin-cli
 	docker push devoptimus/ged-admin-fpm
