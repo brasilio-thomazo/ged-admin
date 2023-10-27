@@ -226,7 +226,6 @@ class AppController extends Controller
         $yaml['data']['REDIS_PORT'] = $custom ? $request->redis_port : $redis_port;
         $yaml['data']['APP_PATH'] = $app->path;
         $yaml['data']['AWS_REGION'] = $custom ? $request->aws_region : config('filesystems.disks.s3.region');
-        $yaml['data']['AWS_DEFAULT_REGION'] = $custom ? $request->aws_region : config('filesystems.disks.s3.region');
         $yaml['data']['AWS_BUCKET'] = $custom ? $request->aws_bucket : config('filesystems.disks.s3.bucket');
         $data[] = Yaml::dump($yaml, 10, 2, Yaml::DUMP_NUMERIC_KEY_AS_STRING);
     }
