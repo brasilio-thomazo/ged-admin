@@ -34,3 +34,7 @@ data:
   K8S_PVC_IMAGES: images-pvc
   CLIENT_DOMAIN: optimus.dev.br
   GRPC_PORT: "50051"
+  
+  AWS_REGION: sa-east-1
+  AWS_DEFAULT_REGION: sa-east-1
+  AWS_BUCKET: ged-image-store

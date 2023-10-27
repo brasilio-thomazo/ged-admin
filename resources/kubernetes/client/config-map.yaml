@@ -5,6 +5,7 @@ metadata:
 data:
   APP_ENV: local
   APP_NAME: ged-client
+  APP_PATH: client
   
   LOG_CHANNEL: stdout
   LOG_LEVEL: debug
@@ -30,4 +31,6 @@ data:
   MEMCACHED_HOST: memchached
 
   GRPC_PORT: "50051"
-  UPLOAD_IMAGE: /home/app/public_html/storage/app/client
+  AWS_REGION: us-east-1
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_BUCKET: ged-storage
